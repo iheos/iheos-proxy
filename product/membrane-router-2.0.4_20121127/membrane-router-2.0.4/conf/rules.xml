@@ -1,0 +1,50 @@
+<?xml version = "1.0" ?>
+<configuration>
+  <rules>
+    <forwarding-rule name="sunil"
+                      port="9892"
+                      blockRequest="false"
+                      blockResponse="false"
+                      inboundTLS="true"
+                      outboundTLS="true"
+                      host="localhost"
+                      method="*">
+      <targetport>8181</targetport>
+      <targethost>192.168.203.128</targethost>
+      <interceptors>
+        <interceptor id="urlRewriter"
+                      name="Simple URL Rewriter" />
+      </interceptors>
+    </forwarding-rule>
+  </rules>
+  <global>
+    <adjustHostHeader>false</adjustHostHeader>
+  </global>
+  <gui>
+    <autotrackexchange>true</autotrackexchange>
+    <indentMessage>true</indentMessage>
+  </gui>
+  <proxy active="false"
+          authentication="false">
+    <proxy-host />
+    <proxy-port>0</proxy-port>
+    <proxy-username />
+    <proxy-password />
+  </proxy>
+  <security>
+    <keystore>
+			<!--
+      <location>/home/ubuntu/sunil/keystore/gateway.jks</location>
+			-->
+			<location>C:\Projects\xdstoolkit_0613\environment\sunil\keystore\keystore</location>
+      <password>d23rq4m1</password>
+    </keystore>
+    <truststore>
+		<!--
+      <location>/home/ubuntu/sunil/keystore/cacerts.jks</location>
+		-->
+			<location>C:\Projects\xdstoolkit_0613\environment\sunil\keystore\cacerts.jks</location>
+      <password>changeit</password>
+    </truststore>
+  </security>
+</configuration>
