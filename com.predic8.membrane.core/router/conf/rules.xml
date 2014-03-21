@@ -1,44 +1,46 @@
 <?xml version = "1.0" ?>
 <configuration>
-  <rules>
-    <forwarding-rule name="[machine]_443"
-                      port="443"
-                      blockRequest="false"
-                      blockResponse="false"
-                      inboundTLS="true"
-                      outboundTLS="true"
-                      host="[machine].dil.aegis.net"
-                      method="*">
-      <targetport>8181</targetport>
-      <targethost>[machine].dil.aegis.net</targethost>
-      <interceptors>
-        <interceptor id="urlRewriter"
-                      name="Simple URL Rewriter" />
-      </interceptors>
-    </forwarding-rule>
-  </rules>
-  <global>
-    <adjustHostHeader>false</adjustHostHeader>
-  </global>
-  <gui>
-    <autotrackexchange>true</autotrackexchange>
-    <indentMessage>true</indentMessage>
-  </gui>
-  <proxy active="false"
-          authentication="false">
-    <proxy-host />
-    <proxy-port>0</proxy-port>
-    <proxy-username />
-    <proxy-password />
-  </proxy>
-  <security>
-    <keystore>
-      <location>C:\Certificates\[machine]\gateway.jks</location>
-      <password>[machine]</password>
-    </keystore>
-    <truststore>
-      <location>C:\Certificates\[machine]\cacerts.jks</location>
-      <password>changeit</password>
-    </truststore>
-  </security>
+    <rules>
+        <forwarding-rule name="localcap"
+                         port="8001"
+                         blockRequest="false"
+                         blockResponse="false"
+                         inboundTLS="false"
+                         outboundTLS="false"
+                         host="localhost"
+                         method="*">
+            <targetport>8080</targetport>
+            <targethost>localhost</targethost>
+            <interceptors>
+                <interceptor id="urlRewriter"
+                             name="Simple URL Rewriter" />
+            </interceptors>
+        </forwarding-rule>
+    </rules>
+    <global>
+        <adjustHostHeader>false</adjustHostHeader>
+    </global>
+    <gui>
+        <autotrackexchange>true</autotrackexchange>
+        <indentMessage>true</indentMessage>
+    </gui>
+    <proxy active="false"
+           authentication="false">
+        <proxy-host />
+        <proxy-port>0</proxy-port>
+        <proxy-username />
+        <proxy-password />
+    </proxy>
+    <!--
+      <security>
+        <keystore>
+          <location>C:\Certificates\[machine]\gateway.jks</location>
+          <password>[machine]</password>
+        </keystore>
+        <truststore>
+          <location>C:\Certificates\[machine]\cacerts.jks</location>
+          <password>changeit</password>
+        </truststore>
+      </security>
+    -->
 </configuration>

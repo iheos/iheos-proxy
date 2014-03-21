@@ -39,6 +39,7 @@ public abstract class AbstractExchange {
 	private String originalRequestUri;
 	
 	private Calendar time = Calendar.getInstance();
+	private long nanoTime = System.nanoTime(); // Additional precision skb
 	private String errMessage = "";
 	private Set<IExchangeViewerListener> exchangeViewerListeners = new HashSet<IExchangeViewerListener>();
 	private Set<IExchangesStoreListener> exchangesStoreListeners = new HashSet<IExchangesStoreListener>();
@@ -339,6 +340,10 @@ public abstract class AbstractExchange {
 
 	public void setSourceIp(String sourceIp) {
 		this.sourceIp = sourceIp;
+	}
+
+	public long getNanoTime() {
+		return nanoTime;
 	}
 	
 	
