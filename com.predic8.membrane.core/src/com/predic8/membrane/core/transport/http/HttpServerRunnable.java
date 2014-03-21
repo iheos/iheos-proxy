@@ -128,8 +128,7 @@ public class HttpServerRunnable extends AbstractHttpRunnable {
 
 	private void process() throws Exception {
 		targetRes = null;
-		try {
-			
+		try {			
 			exchange.setSourceHostname(transport.getRouter().getDnsCache().getHostName(sourceSocket.getInetAddress()));
 			exchange.setSourceIp(transport.getRouter().getDnsCache().getHostAddress(sourceSocket.getInetAddress()));
 			

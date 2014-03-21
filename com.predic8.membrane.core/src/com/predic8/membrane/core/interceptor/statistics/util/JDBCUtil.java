@@ -315,7 +315,7 @@ public class JDBCUtil {
 	
   
 	
-	private static Object getExProperty(AbstractExchange exc, String pty) {
+	public static Object getExProperty(AbstractExchange exc, String pty) {
 		if (pty!=null && exc.getProperty(pty) != null)
 			return (Object)exc.getProperty(pty);
 		

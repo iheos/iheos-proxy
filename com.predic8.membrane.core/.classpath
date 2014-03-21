@@ -33,9 +33,13 @@
 	<classpathentry kind="lib" path="classes"/>
 	<classpathentry kind="lib" path="examples/router/soap-schema-validation/build/classes"/>
 	<classpathentry kind="lib" path="lib/commons-io-2.1.jar"/>
-	<classpathentry kind="lib" path="lib/activemq-all-5.5.1.jar"/>
 	<classpathentry kind="lib" path="lib/mysql-connector-java-5.1.8-bin.jar"/>
 	<classpathentry kind="lib" path="lib/slf4j-log4j12-1.5.5.jar"/>
 	<classpathentry kind="lib" path="lib/slf4j-simple-1.5.5.jar"/>
+	<classpathentry kind="lib" path="lib/repository-3.0.0-SNAPSHOT.jar"/>
+	<classpathentry kind="lib" path="lib/initialization-3.0.0-SNAPSHOT.jar"/>
+	<classpathentry kind="lib" path="lib/v3utilities-3.0.0-SNAPSHOT.jar"/>
+	<classpathentry kind="lib" path="lib/ffmq3-core.jar"/>
+	<classpathentry kind="lib" path="lib/jms-1.1.jar"/>
 	<classpathentry kind="output" path="bin"/>
 </classpath>

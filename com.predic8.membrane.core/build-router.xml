@@ -38,7 +38,7 @@
 		<mkdir dir="build/classes" />
 	</target>
 
-	<target name="dist-router" depends="clean, compile-core, javadoc">
+	<target name="dist-router" depends="clean, compile-core "> <!-- , javadoc -->
 		<mkdir dir="dist" />
 		<mkdir dir="dist/router" />
 		<mkdir dir="dist/router/membrane-router-${version}" />
@@ -71,13 +71,21 @@
 		<jar destfile="dist/router/membrane-router-${version}/lib/membrane-router.jar" basedir="build/classes" includes="**" excludes="**/Starter.class, **/ClassloaderUtil*.class" />
 
 		<jar destfile="dist/router/membrane-router-${version}/starter.jar" basedir="build/classes" includes="**/Starter.class, **/ClassloaderUtil*.class" />
-		
+
+        <!--
+        skb NIST
         <zip destfile="dist/membrane-router-${version}.zip" basedir="dist/router/"/>
 		<tar destfile="dist/membrane-router-${version}.tgz" basedir="dist/router" compression="gzip"/>
-		
+		-->
+
+        <!--
+        skb
+        enable for documentation -->
+		<!--
 		<copy todir="dist/router/membrane-router-${version}-api">
 			<fileset dir="build/doc/api" />
 		</copy>
+		-->
 	</target>
 
 	<target name="compile-mbean">

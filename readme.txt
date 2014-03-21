@@ -20,3 +20,6 @@ C. Setting up Router/Configuration:
 5) Run memrouter.bat (on Windows systems) or memrouter.sh (on Linux-compatible systems) 
 Note: the application process may require system\admin previliges to create application defined ports
 
+D. Running/Troubleshooting
+* If the rules.xml host/port mapping calls for "localhost" and a port, test using exactly the same host "localhost" but not the loop back address 127.0.0.1.
+* If IP address binding is desired, create another rule for 127.0.0.1 in the rules.xml file.

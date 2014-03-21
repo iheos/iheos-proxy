@@ -33,6 +33,7 @@ import com.predic8.membrane.core.rules.RuleKey;
 import com.predic8.membrane.core.statistics.RuleStatistics;
 import com.predic8.membrane.core.util.TextUtil;
 
+
 public class FileExchangeStore extends AbstractExchangeStore {
 
 	private static Log log = LogFactory.getLog(FileExchangeStore.class
@@ -87,6 +88,7 @@ public class FileExchangeStore extends AbstractExchangeStore {
 		}
 
 	}
+
 
 	private synchronized StringBuffer getFileNameBuffer(AbstractExchange exc) {
 		StringBuffer buf = new StringBuffer();

@@ -12,6 +12,9 @@ goto end
 :homeOk
 set CLASSPATH=%MEMBRANE_HOME%
 set CLASSPATH=%MEMBRANE_HOME%/conf
+set CLASSPATH=%CLASSPATH%;%MEMBRANE_HOME%/lib/commons-logging.jar
+set CLASSPATH=%CLASSPATH%;%MEMBRANE_HOME%/lib/ffmq3-core.jar
+set CLASSPATH=%CLASSPATH%;%MEMBRANE_HOME%/lib/jms-1.1.jar
 set CLASSPATH=%CLASSPATH%;%MEMBRANE_HOME%/lib/stax2-api-3.0.2.jar
 set CLASSPATH=%CLASSPATH%;%MEMBRANE_HOME%/lib/stax-api-1.0.1.jar
 set CLASSPATH=%CLASSPATH%;%MEMBRANE_HOME%/lib/woodstox-core-asl-4.0.8.jar
