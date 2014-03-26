@@ -22,15 +22,28 @@
 </bean>
 
   <bean id="dnsCache" class="com.predic8.membrane.core.util.DNSCache">
-    <!-- skb commented for NIST	<property name="appCache" ref="appPreLoader"/> -->
+    <!-- skb commented for NIST -->	<property name="appCache" ref="appPreLoader"/> 
   </bean>
 
-  <!-- skb commeted for NIST 
-  <bean id="appPreLoader" class="com.predic8.membrane.core.startup.ApplicationCachePreLoader" init-method="init"> 
+<!-- appPreLoader
+		definitionSource options: 
+		local: use internal definition
+		db: use a database source
+ -->
+<!--  specify an array of known hostnames here -->
+  <!-- skb commeted for NIST --> 
+  <bean id="appPreLoader" class="com.predic8.membrane.core.startup.ApplicationCachePreLoader" init-method="init">
+  	<property name="definitionSource" value="local"/>
+  	<property name="hostNames">
+  	<array>
+  		<value>localhost</value>
+  		<value>p854048.nist.gov</value>
+  	</array>
+  	</property>  
     <property name="dataSource" ref="dataSource" />
     <property name="gatewayTagDataSetDef" value="${gatewayTagList}"/>
   </bean>
-  -->
+  
 
   <bean id="router" class="com.predic8.membrane.core.Router">
     <property name="ruleManager">
@@ -127,6 +140,7 @@
               <property name="dir" value="C:/e/temp/router/" />
               <property name="saveBodyOnly" value="false" />
                -->
+          	<property name="appCache" ref="appPreLoader"/>               
             </bean>
           </property>
         </bean>

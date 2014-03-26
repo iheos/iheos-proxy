@@ -16,6 +16,7 @@
                       name="Simple URL Rewriter" />
       </interceptors>
     </forwarding-rule>
+    <!-- 
     <forwarding-rule name="localcap-gwt"
                       port="8008"
                       blockRequest="false"
@@ -31,7 +32,7 @@
                       name="Simple URL Rewriter" />
       </interceptors>
     </forwarding-rule>
-
+ 	-->
   </rules>
   <global>
     <adjustHostHeader>false</adjustHostHeader>

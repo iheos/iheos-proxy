@@ -39,6 +39,7 @@ import java.util.List;
 import java.util.Properties;
 
 import javax.jms.DeliveryMode;
+import javax.jms.JMSException;
 import javax.jms.QueueConnectionFactory;
 import javax.naming.Context;
 import javax.naming.InitialContext;
@@ -54,6 +55,7 @@ import com.predic8.membrane.core.exchange.Exchange;
 import com.predic8.membrane.core.exchange.ExchangesUtil;
 import com.predic8.membrane.core.http.Message;
 import com.predic8.membrane.core.interceptor.statistics.util.JDBCUtil;
+import com.predic8.membrane.core.rules.ForwardingRule;
 import com.predic8.membrane.core.rules.Rule;
 import com.predic8.membrane.core.rules.RuleKey;
 import com.predic8.membrane.core.startup.ApplicationCachePreLoader;
@@ -62,6 +64,10 @@ import com.predic8.membrane.core.statistics.RuleStatistics;
 
 
 public class ToolkitRepositoryExchangeStore extends AbstractExchangeStore {
+
+	private static final String PROXY_HOST = "Proxy";
+
+	private static final String PROXY_RULE_MAPPING_NAME = "ProxyRuleMappingName";
 
 	private static Log log = LogFactory.getLog(ToolkitRepositoryExchangeStore.class
 			.getName());
@@ -159,26 +165,31 @@ public class ToolkitRepositoryExchangeStore extends AbstractExchangeStore {
         
 		try {
 			buf.append(msg.getProperty(JDBCUtil.TIME)); // parentName 
-			buf.append(",\"" + msg.getProperty(JDBCUtil.MSG_TYPE));
-	        buf.append("\", \"" + ((isReq)?msg.getProperty(JDBCUtil.PATH):""));
-	        buf.append("\",\"" + msg.getProperty(JDBCUtil.STATUS_CODE));
-	        buf.append("\",\"" + msg.getProperty(JDBCUtil.SERVER));
-	        buf.append("\",\"" + msg.getProperty(JDBCUtil.CLIENT));
-	        buf.append("\",\"" +msg.getProperty(JDBCUtil.CONTENT_TYPE));
-	        buf.append("\",\"" +((isReq)?msg.getProperty(JDBCUtil.METHOD):""));
-	        buf.append("\",\"" +msg.getProperty(JDBCUtil.CONTENT_LENGTH));
-	        buf.append("\",\"" +((isReq)?"":msg.getProperty(JDBCUtil.DURATION)));
+			buf.append(",\"");    buf.append(msg.getProperty(JDBCUtil.MSG_TYPE));
+	        buf.append("\", \""); buf.append(((isReq)?msg.getProperty(JDBCUtil.PATH):""));
+	        buf.append("\",\"");  buf.append(msg.getProperty(JDBCUtil.STATUS_CODE));
+	        
+	        buf.append("\",\"" ); buf.append(msg.getProperty(JDBCUtil.SERVER));
+	        buf.append("\",\"" ); buf.append( msg.getProperty(JDBCUtil.CLIENT));
+	        
+	        buf.append("\",\"" ); buf.append(msg.getProperty(PROXY_HOST)); 
+	        buf.append("^" + PROXY_RULE_MAPPING_NAME + ": "); 
+	        buf.append(msg.getProperty(PROXY_RULE_MAPPING_NAME));
+	        
+	        buf.append("\",\"" ); buf.append( msg.getProperty(JDBCUtil.CONTENT_TYPE));
+	        buf.append("\",\"" ); buf.append(((isReq)?msg.getProperty(JDBCUtil.METHOD):""));
+	        buf.append("\",\"" ); buf.append(msg.getProperty(JDBCUtil.CONTENT_LENGTH));
+	        buf.append("\",\"" ); buf.append(((isReq)?"":msg.getProperty(JDBCUtil.DURATION)));
 	        buf.append("\"");
 		
 		} catch (RepositoryException e) {
-			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
  
 		return buf;
 	}
 	
-	    private void setTxProperties(Asset asset, AbstractExchange exc, boolean isReq, String[] gatewayHCIDs)  {
+	    private void setTxProperties(Asset asset, AbstractExchange exc, boolean isReq)  {
 
 			Message msg = exc.getResponse() == null ? exc.getRequest() : exc
 					.getResponse();
@@ -197,17 +208,27 @@ public class ToolkitRepositoryExchangeStore extends AbstractExchangeStore {
 	    			asset.setProperty(JDBCUtil.PATH, ""+exc.getRequest().getUri());			
 	    		}
 
-	    		asset.setProperty(JDBCUtil.CLIENT,(gatewayHCIDs!=null && !"".equals(gatewayHCIDs[2]))?gatewayHCIDs[2]:exc.getSourceHostname());
-
-	    		asset.setProperty(JDBCUtil.SERVER ,(gatewayHCIDs!=null && !"".equals(gatewayHCIDs[3]))?gatewayHCIDs[3]:exc.getServer());
-
-	            if (gatewayHCIDs!=null) {
-	            	asset.setProperty(JDBCUtil.SENDER_HCID, ""+gatewayHCIDs[0]); 
-	            	asset.setProperty(JDBCUtil.RECEIVER_HCID, ""+gatewayHCIDs[1]);						
-	    		} else {		
-	    			asset.setProperty(JDBCUtil.SENDER_HCID, ""+exc.getSourceHostname());
-	    			asset.setProperty(JDBCUtil.RECEIVER_HCID, ""+exc.getServer());
+	    		// asset.setProperty(JDBCUtil.CLIENT,(gatewayHCIDs!=null && !"".equals(gatewayHCIDs[2]))?gatewayHCIDs[2]:exc.getSourceHostname());
+	    		
+	    		// asset.setProperty(JDBCUtil.SERVER ,(gatewayHCIDs!=null && !"".equals(gatewayHCIDs[3]))?gatewayHCIDs[3]:exc.getServer());
+	    		
+	    		
+	    		String initiatingHost = exc.getServer();
+	    		String respondingHost = ((ForwardingRule)exc.getRule()).getTargetHost();
+	    		
+	    		String[] hostDetails = getHostDetail(initiatingHost, respondingHost);
+	    		
+	    		// Sender
+	    		asset.setProperty(JDBCUtil.SERVER , ((hostDetails!=null && hostDetails.length==4)?hostDetails[2]:initiatingHost) );
+	    		
+	    		// Receiver
+	    		if (exc.getRule() instanceof ForwardingRule) {
+	    			asset.setProperty(JDBCUtil.CLIENT, ((ForwardingRule)exc.getRule()).getTargetHost() + ":" + ((ForwardingRule)exc.getRule()).getTargetPort()); // Real 
+	    								  	
 	    		}
+	    		asset.setProperty(PROXY_HOST , exc.getRule().getKey().getHost() + ":" + exc.getRule().getKey().getPort() );
+	    		asset.setProperty(PROXY_RULE_MAPPING_NAME , exc.getRule().getName()); 
+	    			            
 	            
 	            if (isReq) {
 	            	asset.setProperty(JDBCUtil.CONTENT_TYPE ,""+exc.getRequestContentType());
@@ -274,7 +295,7 @@ public class ToolkitRepositoryExchangeStore extends AbstractExchangeStore {
 	        	msgType = repos.createNamedAsset("Response", null, new SimpleType("resType"), ioHeaderId+"_Response");
 	            msgType.setProperty(PropertyKey.DISPLAY_ORDER, "2");
 	        }
-	        setTxProperties(msgType, exc, isReq, null);
+	        setTxProperties(msgType, exc, isReq);
 	        String txDetailCsv = getTxDetailCsv(parentName, msgType, isReq).toString();
 	        
 	        msgType = ioHeader.addAsset(msgType);
@@ -288,10 +309,7 @@ public class ToolkitRepositoryExchangeStore extends AbstractExchangeStore {
 		} catch (Exception ex) {
 			log.error(ex.toString());
 			ex.printStackTrace();
-		}
-		//
-		
-
+		}		
 	}
 
     private void saveArtifacts(Asset msgType, Message msg , boolean isReq, String[] gatewayHCIDs, String bodyContentType, String txDetailCsv) throws Exception {
@@ -330,6 +348,8 @@ public class ToolkitRepositoryExchangeStore extends AbstractExchangeStore {
 			os.close();
 		}
 		
+		log.debug("Tx detail info: " + txDetailCsv);
+		
 		try {
     		sendMessage( 
     				 txDetailCsv
@@ -343,48 +363,38 @@ public class ToolkitRepositoryExchangeStore extends AbstractExchangeStore {
     	}
     }
 
+    private String[] getHostDetail(String initiatingHost, String respondingHost) {
+    	log.debug("i: " + initiatingHost + ",r: " + respondingHost);
+    	
+        if (getAppCache() != null) {            
 
-    private String[] getGatewayHCID(final int flag, Exchange exc) {
-        if (appCache != null && exc != null && exc.getSourceHostname() != null) {
-            String origin = null;
-            String dest = null;
+            String[] excProvider = new String[] { initiatingHost, respondingHost, "", "" };
+            GatewayTag gTagInitiator = null; 
+            GatewayTag gTagResponder = null;
+                        
 
-            if (flag == 0) {// see ILT-365 WBS reference code I.c.i.
-                origin = exc.getSourceHostname();
-                dest = exc.getServer();
-            } else {// see ILT-365 WBS reference code I.c.ii.
-                origin = exc.getServer();
-                dest = exc.getSourceHostname();
+            gTagInitiator = getAppCache().getGatewayTagMap(initiatingHost);
+            gTagResponder = getAppCache().getGatewayTagMap(respondingHost);
+            
+            if (gTagInitiator != null && gTagInitiator.getHCID() != null) {
+                excProvider[0] = gTagInitiator.getHCID();
+            }
+            if (gTagResponder != null && gTagResponder.getHCID() != null) {
+                excProvider[1] = gTagResponder.getHCID();
             }
 
-            String[] hcidDirection = new String[] { origin, dest, "", "" };
-            final GatewayTag gTagOrigin = appCache.getGatewayTagMap(origin);
-            final GatewayTag gTagDest = appCache.getGatewayTagMap(dest);
-            if (gTagOrigin != null && gTagOrigin.getHCID() != null) {
-                hcidDirection[0] = gTagOrigin.getHCID();
-            }
-            if (gTagDest != null && gTagDest.getHCID() != null) {
-                hcidDirection[1] = gTagDest.getHCID();
+            if (gTagInitiator != null && gTagResponder != null) {
+                    excProvider[2] = gTagInitiator.getGatewayAddress();
+                    excProvider[3] = gTagResponder.getGatewayAddress();
             }
 
-            if (gTagOrigin != null && gTagDest != null) {
-                if (flag == 0) {
-                    hcidDirection[2] = gTagOrigin.getGatewayAddress();
-                    hcidDirection[3] = gTagDest.getGatewayAddress();
-
-                } else {
-                    hcidDirection[3] = gTagOrigin.getGatewayAddress();
-                    hcidDirection[2] = gTagDest.getGatewayAddress();
-
-                }
-            }
-
-            return hcidDirection;
+            return excProvider;
         } else {
             log.error("Error in resolving HCIDs: appCache or exchange error!");
         }
         return null;
     }
+    
     
     private void sendMessage(String txDetail, String msgType, String parentId, String repId, String acs, String headerLoc, String bodyLoc) {
         log.debug("\n enter sendMessage \n");
@@ -393,6 +403,9 @@ public class ToolkitRepositoryExchangeStore extends AbstractExchangeStore {
         	log.debug("\n empty txDetail, exit sendMessage\n");
         	return;
         }
+        
+        javax.jms.QueueConnection connection = null;
+        javax.jms.QueueSession session = null;
         
         try {
 	        Hashtable<String,String> env = new Hashtable<String, String>();
@@ -403,9 +416,9 @@ public class ToolkitRepositoryExchangeStore extends AbstractExchangeStore {
 	        // Lookup a connection factory in the context
 	        javax.jms.QueueConnectionFactory factory = (QueueConnectionFactory) context.lookup(FFMQConstants.JNDI_QUEUE_CONNECTION_FACTORY_NAME);
 	
-	        javax.jms.QueueConnection connection = factory.createQueueConnection();
+	        connection = factory.createQueueConnection();
 	                
-	        javax.jms.QueueSession session = null;
+
 	        javax.jms.QueueSender sender = null;
 	
 	        session = connection.createQueueSession(false,
@@ -442,15 +455,25 @@ public class ToolkitRepositoryExchangeStore extends AbstractExchangeStore {
 
             sender.send(mapMsg);
 
-            // Clean up
-            session.close();
-            connection.close();          
+                      
             
             log.debug("\n *************** sendMessage()\n");
         } catch (Exception ex) {
             log.debug("\n *************** Error inserting into the queue \n");
             log.error(ex.toString());
             ex.printStackTrace();
+        } finally {
+        	// Clean up
+        	if (session!=null) {
+                try {
+    				session.close();
+    			} catch (Exception ex) {}        		
+        	}
+        	if (connection!=null) {
+                try {
+    				connection.close();
+    			} catch (Exception e) {}        		
+        	}
         }
 
     }
@@ -591,6 +614,20 @@ import org.apache.activemq.ActiveMQConnectionFactory;
 
 	public void setToolkitInstallationPath(String toolkitInstallationPath) {
 		this.toolkitInstallationPath = toolkitInstallationPath;
+	}
+
+	/**
+	 * @return the appCache
+	 */
+	public ApplicationCachePreLoader getAppCache() {
+		return appCache;
+	}
+
+	/**
+	 * @param appCache the appCache to set
+	 */
+	public void setAppCache(ApplicationCachePreLoader appCache) {
+		this.appCache = appCache;
 	}
 
 }
