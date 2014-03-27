@@ -65,9 +65,15 @@ import com.predic8.membrane.core.statistics.RuleStatistics;
 
 public class ToolkitRepositoryExchangeStore extends AbstractExchangeStore {
 
-	private static final String PROXY_HOST = "Proxy";
+	private static final String FORWARD_TO = "forwardTo";
 
-	private static final String PROXY_RULE_MAPPING_NAME = "ProxyRuleMappingName";
+	private static final String MESSAGE_FROM = "messageFrom";
+
+	private static final String PROXY_HOST = "proxy";
+	
+	private static final String PROXY_PORT = "proxyPort";
+
+	private static final String PROXY_RULE_MAPPING_NAME = "proxyRuleMappingName";
 
 	private static Log log = LogFactory.getLog(ToolkitRepositoryExchangeStore.class
 			.getName());
@@ -161,20 +167,18 @@ public class ToolkitRepositoryExchangeStore extends AbstractExchangeStore {
 	private synchronized StringBuffer getTxDetailCsv(String parentName, Asset msg, boolean isReq) {
 		StringBuffer buf = new StringBuffer();
 		// TODO: Refactor to allow common reference
-	    // String[] columns = {"Timestamp","Type","Path","Status","Sender","Receiver","ContentType","Method","Length","ResponseTime"};
+		// final String[] columns = {"Timestamp","Status","Artifact","Message From","Proxy","Forwarded To","Path","ContentType","Method","Length","Response Time"};
         
 		try {
 			buf.append(msg.getProperty(JDBCUtil.TIME)); // parentName 
-			buf.append(",\"");    buf.append(msg.getProperty(JDBCUtil.MSG_TYPE));
-	        buf.append("\", \""); buf.append(((isReq)?msg.getProperty(JDBCUtil.PATH):""));
-	        buf.append("\",\"");  buf.append(msg.getProperty(JDBCUtil.STATUS_CODE));
+			buf.append(",\"");    buf.append(msg.getProperty(JDBCUtil.STATUS_CODE));
+	        buf.append("\",\"");  buf.append(msg.getProperty(JDBCUtil.MSG_TYPE));
 	        
-	        buf.append("\",\"" ); buf.append(msg.getProperty(JDBCUtil.SERVER));
-	        buf.append("\",\"" ); buf.append( msg.getProperty(JDBCUtil.CLIENT));
-	        
-	        buf.append("\",\"" ); buf.append(msg.getProperty(PROXY_HOST)); 
-	        buf.append("^" + PROXY_RULE_MAPPING_NAME + ": "); 
-	        buf.append(msg.getProperty(PROXY_RULE_MAPPING_NAME));
+			buf.append("\",\"" ); buf.append(msg.getProperty(MESSAGE_FROM));
+	        buf.append("\",\"" ); buf.append(msg.getProperty(PROXY_PORT));			
+	        buf.append("\",\"" ); buf.append(msg.getProperty(FORWARD_TO));
+	        	        			
+	        buf.append("\", \""); buf.append(((isReq)?msg.getProperty(JDBCUtil.PATH):""));	        	        
 	        
 	        buf.append("\",\"" ); buf.append( msg.getProperty(JDBCUtil.CONTENT_TYPE));
 	        buf.append("\",\"" ); buf.append(((isReq)?msg.getProperty(JDBCUtil.METHOD):""));
@@ -212,21 +216,34 @@ public class ToolkitRepositoryExchangeStore extends AbstractExchangeStore {
 	    		
 	    		// asset.setProperty(JDBCUtil.SERVER ,(gatewayHCIDs!=null && !"".equals(gatewayHCIDs[3]))?gatewayHCIDs[3]:exc.getServer());
 	    		
+	    		log.debug("*** " + exc.getTimeReqReceived() + " -- " + exc.getTimeReqSent() + " -- " +  exc.getTimeResReceived() + " -- " + exc.getTimeResSent() );
 	    		
 	    		String initiatingHost = exc.getServer();
+	    		
 	    		String respondingHost = ((ForwardingRule)exc.getRule()).getTargetHost();
 	    		
 	    		String[] hostDetails = getHostDetail(initiatingHost, respondingHost);
 	    		
+	    		
+	    		String messageFrom = ((hostDetails!=null && hostDetails.length==3)?hostDetails[2]:initiatingHost);
+	    		String forwardTo = ((ForwardingRule)exc.getRule()).getTargetHost() + ":" + ((ForwardingRule)exc.getRule()).getTargetPort(); // Real
+	    		if (!isReq) {
+	    			String swapDirectionTemp = forwardTo;
+	    			
+	    			forwardTo = messageFrom;
+	    			messageFrom = swapDirectionTemp;	    			
+	    		}
+	    		
 	    		// Sender
-	    		asset.setProperty(JDBCUtil.SERVER , ((hostDetails!=null && hostDetails.length==4)?hostDetails[2]:initiatingHost) );
+	    		asset.setProperty(MESSAGE_FROM , messageFrom);
 	    		
 	    		// Receiver
 	    		if (exc.getRule() instanceof ForwardingRule) {
-	    			asset.setProperty(JDBCUtil.CLIENT, ((ForwardingRule)exc.getRule()).getTargetHost() + ":" + ((ForwardingRule)exc.getRule()).getTargetPort()); // Real 
+	    			asset.setProperty(FORWARD_TO, forwardTo); 
 	    								  	
 	    		}
-	    		asset.setProperty(PROXY_HOST , exc.getRule().getKey().getHost() + ":" + exc.getRule().getKey().getPort() );
+	    		asset.setProperty(PROXY_HOST , exc.getRule().getKey().getHost());
+	    		asset.setProperty(PROXY_PORT, ""+exc.getRule().getKey().getPort());
 	    		asset.setProperty(PROXY_RULE_MAPPING_NAME , exc.getRule().getName()); 
 	    			            
 	            
@@ -236,7 +253,7 @@ public class ToolkitRepositoryExchangeStore extends AbstractExchangeStore {
 	            } else {
 	            	asset.setProperty(JDBCUtil.CONTENT_TYPE ,""+exc.getResponseContentType());
 	            	asset.setProperty(JDBCUtil.CONTENT_LENGTH , ""+ ((msg.getBody()!=null)?msg.getBody().getLength():"")); //exc.getResponseContentLength()        	        	
-	            	asset.setProperty(JDBCUtil.DURATION, "" + (exc.getTimeResReceived() - exc.getTimeReqSent()));
+	            	asset.setProperty(JDBCUtil.DURATION, "" + (exc.getTimeResReceived() - exc.getTimeReqSent())); // (exc.getTimeResReceived() - exc.getTimeReqSent()
 	            }
 
 	            Object o = JDBCUtil.getExProperty(exc, FileExchangeStore.MESSAGE_FILE_PATH);
@@ -244,7 +261,7 @@ public class ToolkitRepositoryExchangeStore extends AbstractExchangeStore {
 	            	asset.setProperty(JDBCUtil.MSG_FILE_PATH, "" + (String)o);
 	    		
 	    	} catch (Exception ex) {
-	    		log.info(ex.toString());
+	    		log.error(ex.toString());
 	    	}
 	    		    	
 
@@ -357,7 +374,9 @@ public class ToolkitRepositoryExchangeStore extends AbstractExchangeStore {
     				, msgType.getProperty(PropertyKey.PARENT_ID)
     				, msgHeader.getRepository().getIdString()
     				, msgHeader.getSource().getAccess().name()    			
-    				, msgHeader.getPropFileRelativePart(), (msgBody!=null?msgBody.getPropFileRelativePart():null));
+    				, msgHeader.getPropFileRelativePart(), (msgBody!=null?msgBody.getPropFileRelativePart():null)
+    				, (PROXY_HOST + ": " + msgType.getProperty(PROXY_HOST) + ":" + msgType.getProperty(PROXY_PORT) + ", " + PROXY_RULE_MAPPING_NAME + ": " + msgType.getProperty(PROXY_RULE_MAPPING_NAME))
+    		        );
     	} catch (Exception ex) {
     		log.warn(ex.toString());
     	}
@@ -396,7 +415,7 @@ public class ToolkitRepositoryExchangeStore extends AbstractExchangeStore {
     }
     
     
-    private void sendMessage(String txDetail, String msgType, String parentId, String repId, String acs, String headerLoc, String bodyLoc) {
+    private void sendMessage(String txDetail, String msgType, String parentId, String repId, String acs, String headerLoc, String bodyLoc, String proxyDetail) {
         log.debug("\n enter sendMessage \n");
         
         if (txDetail==null) {
@@ -452,14 +471,16 @@ public class ToolkitRepositoryExchangeStore extends AbstractExchangeStore {
             	mapMsg.setObject("bodyLoc", bodyLoc);
             if (msgType!=null)
             	mapMsg.setObject("msgType", msgType);
+            if (proxyDetail!=null)
+            	mapMsg.setObject("proxyDetail", proxyDetail);            
+	        
 
             sender.send(mapMsg);
-
                       
             
             log.debug("\n *************** sendMessage()\n");
         } catch (Exception ex) {
-            log.debug("\n *************** Error inserting into the queue \n");
+            log.error("\n *************** Error inserting into the queue \n");
             log.error(ex.toString());
             ex.printStackTrace();
         } finally {
