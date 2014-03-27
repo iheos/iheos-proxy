@@ -23,6 +23,7 @@ Note: the application process may require system\admin previliges to create appl
 D. Running/Troubleshooting
 * If the rules.xml host/port mapping calls for "localhost" and a port, test using exactly the same host "localhost" but not the loop back address 127.0.0.1.
 * If IP address binding is desired, create another rule for 127.0.0.1 in the rules.xml file.
+* Update monitor-rules.xml and enter a list of known (FQDN) hostnames to automatically map dynamic IP addresses to the hostname
 
 E. Setting up a Message Broker
 1) Extract ffmq3-distribution-3.0.5-dist.zip file 
