@@ -65,7 +65,7 @@ import com.predic8.membrane.core.statistics.RuleStatistics;
 
 public class ToolkitRepositoryExchangeStore extends AbstractExchangeStore {
 
-	private static final String FORWARD_TO = "forwardTo";
+	private static final String FORWARD_TO = "forwardedTo";
 
 	private static final String MESSAGE_FROM = "messageFrom";
 
@@ -371,6 +371,7 @@ public class ToolkitRepositoryExchangeStore extends AbstractExchangeStore {
     		sendMessage( 
     				 txDetailCsv
     				, (isReq?"REQUEST":"RESPONSE")
+    				, msgType.getPropFileRelativePart()    				
     				, msgType.getProperty(PropertyKey.PARENT_ID)
     				, msgHeader.getRepository().getIdString()
     				, msgHeader.getSource().getAccess().name()    			
@@ -415,7 +416,7 @@ public class ToolkitRepositoryExchangeStore extends AbstractExchangeStore {
     }
     
     
-    private void sendMessage(String txDetail, String msgType, String parentId, String repId, String acs, String headerLoc, String bodyLoc, String proxyDetail) {
+    private void sendMessage(String txDetail, String msgType, String parentLoc, String ioParentId, String repId, String acs, String headerLoc, String bodyLoc, String proxyDetail) {
         log.debug("\n enter sendMessage \n");
         
         if (txDetail==null) {
@@ -459,8 +460,10 @@ public class ToolkitRepositoryExchangeStore extends AbstractExchangeStore {
             javax.jms.MapMessage mapMsg = session.createMapMessage();
             mapMsg.setJMSDeliveryMode(DeliveryMode.PERSISTENT);
             mapMsg.setObject("txDetail", txDetail);
-            if (parentId!=null)
-            	mapMsg.setObject("ioHeaderId", parentId);            
+            if (parentLoc!=null)
+            	mapMsg.setObject("parentLoc", parentLoc);            
+            if (ioParentId!=null)
+            	mapMsg.setObject("ioHeaderId", ioParentId);            
             if (repId!=null)
             	mapMsg.setObject("repId", repId);
             if (acs!=null)

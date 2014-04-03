@@ -22,13 +22,28 @@
 </bean>
 
   <bean id="dnsCache" class="com.predic8.membrane.core.util.DNSCache">
-    <property name="appCache" ref="appPreLoader"/>
+    <!-- skb commented for NIST -->	<property name="appCache" ref="appPreLoader"/> 
   </bean>
 
-  <bean id="appPreLoader" class="com.predic8.membrane.core.startup.ApplicationCachePreLoader" init-method="init"> <!-- init-method="init" -->
+<!-- appPreLoader
+		definitionSource options: 
+		local: use internal definition
+		db: use a database source
+ -->
+<!--  specify an array of known hostnames here -->
+  <!-- skb commeted for NIST --> 
+  <bean id="appPreLoader" class="com.predic8.membrane.core.startup.ApplicationCachePreLoader" init-method="init">
+  	<property name="definitionSource" value="local"/>
+  	<property name="hostNames">
+  	<array>
+  		<value>localhost</value>
+  		<value>p854048.nist.gov</value>
+  	</array>
+  	</property>  
     <property name="dataSource" ref="dataSource" />
     <property name="gatewayTagDataSetDef" value="${gatewayTagList}"/>
   </bean>
+  
 
   <bean id="router" class="com.predic8.membrane.core.Router">
     <property name="ruleManager">
@@ -105,18 +120,32 @@
         Uncomment the following bean and set the value of the property dir
         to the folder where you want to save messages.
         -->
-        <!--
+        <!-- skb un-comment for NIST -->
+        <!-- 
         <bean class="com.predic8.membrane.core.interceptor.ExchangeStoreInterceptor">
           <property name="exchangeStore">
             <bean class="com.predic8.membrane.core.exchangestore.FileExchangeStore">
-              <property name="dir" value="C:/temp" />
+              <property name="dir" value="C:/e/temp/router/" />
               <property name="saveBodyOnly" value="false" />
             </bean>
           </property>
         </bean>
-        -->
-
-    <!-- skb -->
+ 		-->
+ 		
+        <bean class="com.predic8.membrane.core.interceptor.ExchangeStoreInterceptor">
+          <property name="exchangeStore">
+            <bean class="com.predic8.membrane.core.exchangestore.ToolkitRepositoryExchangeStore" init-method="init" >
+          <property name="toolkitInstallationPath" value="C:/e/ec-workspace-gui-test/.metadata/.plugins/org.eclipse.wst.server.core/tmp0/wtpwebapps/xdstools3" />
+              <!--     
+              <property name="dir" value="C:/e/temp/router/" />
+              <property name="saveBodyOnly" value="false" />
+               -->
+          	<property name="appCache" ref="appPreLoader"/>               
+            </bean>
+          </property>
+        </bean>
+ 		
+	    <!-- skb  
         <bean class="com.predic8.membrane.core.interceptor.ExchangeStoreInterceptor">
           <property name="exchangeStore">
             <bean class="com.predic8.membrane.core.exchangestore.MsgExchangeStore">
@@ -124,7 +153,9 @@
             </bean>
           </property>
         </bean>
+		--> 
 
+		
         <!--
         Storing Exchange Statistics in a Database
         =========================================
@@ -142,8 +173,8 @@
 
 
         <!-- skb  11/11/21(MON) 15:27:14 -->
+		<!-- comment out for NIST 
         <bean class="com.predic8.membrane.core.interceptor.statistics.StatisticsJDBCInterceptor" init-method="init" >
-          <!-- 2012-11-25 Richard Ettema - properties to support remote deployment of memrouter -->
           <property name="brokerName" value="tcp://localhost:61616" />
           <property name="brokerUserName" value="" />
           <property name="brokerPassword" value="" />
@@ -154,7 +185,23 @@
           <property name="soapOnly" value="false" />
           <property name="appCache" ref="appPreLoader"/>
         </bean>
+		end -->
 
+		<!--  NIST Toolkit artifact repository output 
+		==============================================
+		Do not use this for now. 
+        <bean class="com.predic8.membrane.core.interceptor.statistics.StatisticsFsInterceptor" init-method="init" >
+          <property name="toolkitInstallationPath" value="C:/e/ec-workspace-gui-test/.metadata/.plugins/org.eclipse.wst.server.core/tmp0/wtpwebapps/xdstools3" />
+                  
+          <property name="brokerName" value="tcp://localhost:61616" />
+          <property name="brokerUserName" value="" />
+          <property name="brokerPassword" value="" />
+          <property name="queue" value="Queue-Agent-MessageSink" />
+
+          <property name="postMethodOnly" value="false" />
+          <property name="soapOnly" value="false" />
+        </bean>
+		-->
 
         <!--
         Logging Router access to CSV
@@ -162,12 +209,11 @@
         You can store exchange metadata in an CSV file. The data will be appended
         to the given file, and can be imported into Excel.
         -->
-        <!--
+        <!-- skb un-comment for NIST 
         <bean class="com.predic8.membrane.core.interceptor.statistics.StatisticsCSVInterceptor">
-          <property name="fileName" value="C:\temp\exc-statistics.csv" />
+          <property name="fileName" value="C:\e\temp\router\exc-statistics.csv" />
         </bean>
-        -->
-
+		-->
          <!--
         <bean class="com.predic8.membrane.core.interceptor.schemavalidation.SOAPMessageValidatorInterceptor" init-method="init">
           <property name="wsdl" value="http://www.predic8.com:8080/material/ArticleService?wsdl" />
@@ -190,10 +236,10 @@
   -->
  <!--
   <bean id="exchangeStore" class="com.predic8.membrane.core.exchangestore.MemoryExchangeStore" />
+
  -->
 
   <bean id="exchangeStore" class="com.predic8.membrane.core.exchangestore.ForgetfulExchangeStore" />
-
 
   <bean id="configurationManager" class="com.predic8.membrane.core.ConfigurationManager">
     <property name="configurationStore">
@@ -313,7 +359,7 @@
   -->
   <bean id="accessControlInterceptor" class="com.predic8.membrane.core.interceptor.acl.AccessControlInterceptor">
     <property name="displayName" value="Access Control List Interceptor" />
-    <property name="aclFilename" value="C:\temp\acl.xml" />
+    <property name="aclFilename" value="C:\e\temp\router\acl.xml" />
   </bean>
 
   <bean id="administrationInterceptor" class="com.predic8.membrane.core.interceptor.administration.AdministrationInterceptor" />
