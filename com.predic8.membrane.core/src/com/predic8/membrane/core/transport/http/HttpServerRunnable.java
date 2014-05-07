@@ -30,7 +30,8 @@ import org.apache.commons.logging.LogFactory;
 import com.predic8.membrane.core.exchange.Exchange;
 import com.predic8.membrane.core.http.Header;
 import com.predic8.membrane.core.http.Request;
-import com.predic8.membrane.core.util.*;
+import com.predic8.membrane.core.util.EndOfStreamException;
+import com.predic8.membrane.core.util.HttpUtil;
 
 public class HttpServerRunnable extends AbstractHttpRunnable {
 
@@ -146,6 +147,7 @@ public class HttpServerRunnable extends AbstractHttpRunnable {
 			}
 
 			String dest = exchange.getDestinations().get(0);
+
 			try {
 				targetRes = client.call(exchange);
 			} catch (ConnectException e) {

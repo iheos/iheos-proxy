@@ -67,6 +67,8 @@ public abstract class AbstractExchange {
 	
 	private String sourceIp;
 	
+	private String destIp; // skb
+	
 	
 	public AbstractExchange() {
 		
@@ -344,6 +346,14 @@ public abstract class AbstractExchange {
 
 	public long getNanoTime() {
 		return nanoTime;
+	}
+
+	public String getDestIp() {
+		return destIp;
+	}
+
+	public void setDestIp(String destIp) {
+		this.destIp = destIp;
 	}
 	
 	

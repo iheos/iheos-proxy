@@ -122,10 +122,17 @@ public class HttpClient {
 			Connection con = null;
 			String dest = getDestination(exc, counter);
 			try {
+//				try {
+//					log.debug("******* desIp" + host.getHostAddress());
+//					exc.setDestIp(host.getHostAddress()); // con.socket.getInetAddress().getHostAddress()					
+//				} catch (Throwable t) {
+//					log.info("Error getting destIp" + t.toString());
+//				}
 				log.debug("try # " + counter + " to " + dest);
 				init(exc, dest);
 				con = conMgr.getConnection(host, port, localHost, tls);
-				exc.setTargetConnection(con);
+				exc.setTargetConnection(con);				
+
 				return doCall(exc, con);
 				// java.net.SocketException: Software caused connection abort: socket write error
 			} catch (ConnectException e) {
