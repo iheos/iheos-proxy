@@ -32,6 +32,7 @@ import gov.nist.hit.ds.utilities.datatypes.Hl7Date;
 import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.FileReader;
+import java.net.InetAddress;
 import java.text.DateFormat;
 import java.text.SimpleDateFormat;
 import java.util.Hashtable;
@@ -39,7 +40,6 @@ import java.util.List;
 import java.util.Properties;
 
 import javax.jms.DeliveryMode;
-import javax.jms.JMSException;
 import javax.jms.QueueConnectionFactory;
 import javax.naming.Context;
 import javax.naming.InitialContext;
@@ -51,7 +51,6 @@ import org.apache.commons.logging.LogFactory;
 
 import com.predic8.membrane.core.Constants;
 import com.predic8.membrane.core.exchange.AbstractExchange;
-import com.predic8.membrane.core.exchange.Exchange;
 import com.predic8.membrane.core.exchange.ExchangesUtil;
 import com.predic8.membrane.core.http.Message;
 import com.predic8.membrane.core.interceptor.statistics.util.JDBCUtil;
@@ -66,8 +65,12 @@ import com.predic8.membrane.core.statistics.RuleStatistics;
 public class ToolkitRepositoryExchangeStore extends AbstractExchangeStore {
 
 	private static final String FORWARD_TO = "forwardedTo";
+	
+	private static final String FORWARD_TO_IP_ADDRESS = "forwardedToIpAddress";
 
 	private static final String MESSAGE_FROM = "messageFrom";
+	
+	private static final String MESSAGE_FROM_IP_ADDRESS = "messageFromIpAddress";
 
 	private static final String PROXY_HOST = "proxy";
 	
@@ -167,9 +170,10 @@ public class ToolkitRepositoryExchangeStore extends AbstractExchangeStore {
 	private synchronized StringBuffer getTxDetailCsv(String parentName, Asset msg, boolean isReq) {
 		StringBuffer buf = new StringBuffer();
 		// TODO: Refactor to allow common reference
-		// final String[] columns = {"Timestamp","Status","Artifact","Message From","Proxy","Forwarded To","Path","ContentType","Method","Length","Response Time"};
+		// final String[] columns = {"","Timestamp","Status","Artifact","Message From","Proxy","Forwarded To","Path","ContentType","Method","Length","Response Time"};
         
 		try {
+			buf.append("\"\",");
 			buf.append(msg.getProperty(JDBCUtil.TIME)); // parentName 
 			buf.append(",\"");    buf.append(msg.getProperty(JDBCUtil.STATUS_CODE));
 	        buf.append("\",\"");  buf.append(msg.getProperty(JDBCUtil.MSG_TYPE));
@@ -218,29 +222,43 @@ public class ToolkitRepositoryExchangeStore extends AbstractExchangeStore {
 	    		
 	    		log.debug("*** " + exc.getTimeReqReceived() + " -- " + exc.getTimeReqSent() + " -- " +  exc.getTimeResReceived() + " -- " + exc.getTimeResSent() );
 	    		
-	    		String initiatingHost = exc.getServer();
+	    		String initiatingHost =  exc.getServer();
 	    		
 	    		String respondingHost = ((ForwardingRule)exc.getRule()).getTargetHost();
 	    		
 	    		String[] hostDetails = getHostDetail(initiatingHost, respondingHost);
 	    		
+	    		String forwardToIp =  "";  //respondingHost;
+				try {
+				
+					forwardToIp = InetAddress.getByName(respondingHost).getHostAddress();
+				} catch (Throwable t) {
+					log.info("Error getting Ip: " + t.toString());
+				}
 	    		
 	    		String messageFrom = ((hostDetails!=null && hostDetails.length==3)?hostDetails[2]:initiatingHost);
 	    		String forwardTo = ((ForwardingRule)exc.getRule()).getTargetHost() + ":" + ((ForwardingRule)exc.getRule()).getTargetPort(); // Real
+	    		
+	    		String messageFromIp = exc.getSourceIp();
+	    		
 	    		if (!isReq) {
-	    			String swapDirectionTemp = forwardTo;
-	    			
+	    			String swapDirectionTemp = forwardTo;	    			
 	    			forwardTo = messageFrom;
-	    			messageFrom = swapDirectionTemp;	    			
+	    			messageFrom = swapDirectionTemp;
+	    			
+	    			String swapDirectionTempIp = (forwardToIp==null)?"":forwardToIp;
+	    			forwardToIp = messageFromIp;
+	    			messageFromIp = swapDirectionTempIp; 
 	    		}
 	    		
 	    		// Sender
 	    		asset.setProperty(MESSAGE_FROM , messageFrom);
+	    		asset.setProperty(MESSAGE_FROM_IP_ADDRESS, messageFromIp);
 	    		
 	    		// Receiver
 	    		if (exc.getRule() instanceof ForwardingRule) {
 	    			asset.setProperty(FORWARD_TO, forwardTo); 
-	    								  	
+	    			asset.setProperty(FORWARD_TO_IP_ADDRESS, forwardToIp);	    								  	
 	    		}
 	    		asset.setProperty(PROXY_HOST , exc.getRule().getKey().getHost());
 	    		asset.setProperty(PROXY_PORT, ""+exc.getRule().getKey().getPort());
@@ -377,6 +395,8 @@ public class ToolkitRepositoryExchangeStore extends AbstractExchangeStore {
     				, msgHeader.getSource().getAccess().name()    			
     				, msgHeader.getPropFileRelativePart(), (msgBody!=null?msgBody.getPropFileRelativePart():null)
     				, (PROXY_HOST + ": " + msgType.getProperty(PROXY_HOST) + ":" + msgType.getProperty(PROXY_PORT) + ", " + PROXY_RULE_MAPPING_NAME + ": " + msgType.getProperty(PROXY_RULE_MAPPING_NAME))
+    				, msgType.getProperty(MESSAGE_FROM_IP_ADDRESS)
+    				, msgType.getProperty(FORWARD_TO_IP_ADDRESS)
     		        );
     	} catch (Exception ex) {
     		log.warn(ex.toString());
@@ -416,7 +436,7 @@ public class ToolkitRepositoryExchangeStore extends AbstractExchangeStore {
     }
     
     
-    private void sendMessage(String txDetail, String msgType, String parentLoc, String ioParentId, String repId, String acs, String headerLoc, String bodyLoc, String proxyDetail) {
+    private void sendMessage(String txDetail, String msgType, String parentLoc, String ioParentId, String repId, String acs, String headerLoc, String bodyLoc, String proxyDetail, String fromIp, String toIp) {
         log.debug("\n enter sendMessage \n");
         
         if (txDetail==null) {
@@ -475,7 +495,11 @@ public class ToolkitRepositoryExchangeStore extends AbstractExchangeStore {
             if (msgType!=null)
             	mapMsg.setObject("msgType", msgType);
             if (proxyDetail!=null)
-            	mapMsg.setObject("proxyDetail", proxyDetail);            
+            	mapMsg.setObject("proxyDetail", proxyDetail);
+            if (fromIp!=null)
+            	mapMsg.setObject(MESSAGE_FROM_IP_ADDRESS, fromIp);
+            if (toIp!=null)
+            	mapMsg.setObject(FORWARD_TO_IP_ADDRESS, toIp);
 	        
 
             sender.send(mapMsg);
