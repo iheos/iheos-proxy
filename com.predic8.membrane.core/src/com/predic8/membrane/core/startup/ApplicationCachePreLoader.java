@@ -57,12 +57,18 @@ public class ApplicationCachePreLoader {
 		for (String key : gatewayList.keySet()) {
 			
 			InetAddress[] iaArray = ip.getAllIPs(key);
-			for (InetAddress ia : iaArray) {
-				log.debug(ipAddress + ">key<" + key +  "> --- ia: <" + ia.getHostAddress() + "><" + ip.getIP(key)+ ">");
-				if (ipAddress.equals(ia.getHostAddress())) {
-					return key;
+			if (iaArray!=null) {
+				for (InetAddress ia : iaArray) {
+					log.debug(ipAddress + ">key<" + key +  "> --- ia: <" + ia.getHostAddress() + "><" + ip.getIP(key)+ ">");
+					if (ipAddress.equals(ia.getHostAddress())) {
+						return key;
+					}				
 				}				
+			} else {
+				log.warn("Hostname cannot be resolved for this address: " + ipAddress);
+				return ipAddress;
 			}
+
 			
 //			log.info(ip.getIP(key));
 //			if (ipAddress.equals(ip.getIP(key))) {
