@@ -235,11 +235,15 @@ public class ToolkitRepositoryExchangeStore extends AbstractExchangeStore {
 				} catch (Throwable t) {
 					log.info("Error getting Ip: " + t.toString());
 				}
-	    		
-	    		String messageFrom = ((hostDetails!=null && hostDetails.length==3)?hostDetails[2]:initiatingHost);
+
+	    		String messageFromIp = exc.getSourceIp();
+
+	    		if (hostDetails==null) {
+	    			log.info("hostDetails are not available. messageFromIp: <" + messageFromIp + ">, initiatingHost:" + initiatingHost);
+	    		}
+	    		String messageFrom = ((hostDetails!=null && hostDetails.length==3)?hostDetails[2]:messageFromIp); // initiatingHost -- This seems to be incorrect when the hostname fails to resolve and the initiatingHost is the server not the client. 
 	    		String forwardTo = ((ForwardingRule)exc.getRule()).getTargetHost() + ":" + ((ForwardingRule)exc.getRule()).getTargetPort(); // Real
 	    		
-	    		String messageFromIp = exc.getSourceIp();
 	    		
 	    		if (!isReq) {
 	    			String swapDirectionTemp = forwardTo;	    			
@@ -330,6 +334,7 @@ public class ToolkitRepositoryExchangeStore extends AbstractExchangeStore {
 	        	msgType = repos.createNamedAsset("Response", null, new SimpleType("resType"), ioHeaderId+"_Response");
 	            msgType.setProperty(PropertyKey.DISPLAY_ORDER, "2");
 	        }
+//	        msgType.setProperty("", arg1) 
 	        setTxProperties(msgType, exc, isReq);
 	        String txDetailCsv = getTxDetailCsv(parentName, msgType, isReq).toString();
 	        
