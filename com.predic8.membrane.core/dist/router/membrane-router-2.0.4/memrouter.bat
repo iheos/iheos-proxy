@@ -21,3 +21,5 @@ set CLASSPATH=%CLASSPATH%;%MEMBRANE_HOME%/lib/woodstox-core-asl-4.0.8.jar
 set CLASSPATH=%CLASSPATH%;%MEMBRANE_HOME%/starter.jar
 echo Membrane Router running...
 java  -classpath %CLASSPATH% com.predic8.membrane.core.Starter %1 %2 %3 %4 %5  %6 %7 %8 %9
+
+rem debug classpath: java -verbose:class

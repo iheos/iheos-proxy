@@ -37,9 +37,11 @@
 	<classpathentry kind="lib" path="lib/slf4j-log4j12-1.5.5.jar"/>
 	<classpathentry kind="lib" path="lib/slf4j-simple-1.5.5.jar"/>
 	<classpathentry kind="lib" path="lib/repository-3.0.0-SNAPSHOT.jar"/>
-	<classpathentry kind="lib" path="lib/initialization-3.0.0-SNAPSHOT.jar"/>
-	<classpathentry kind="lib" path="lib/v3utilities-3.0.0-SNAPSHOT.jar"/>
 	<classpathentry kind="lib" path="lib/ffmq3-core.jar"/>
 	<classpathentry kind="lib" path="lib/jms-1.1.jar"/>
+	<classpathentry kind="lib" path="lib/repository-shared-3.0.0-SNAPSHOT.jar"/>
+	<classpathentry kind="lib" path="lib/toolkit-3.0.0-SNAPSHOT.jar"/>
+	<classpathentry kind="lib" path="lib/xdsException-3.0.0-SNAPSHOT.jar"/>
+	<classpathentry kind="lib" path="lib/utilities-3.0.0-SNAPSHOT.jar"/>
 	<classpathentry kind="output" path="bin"/>
 </classpath>
