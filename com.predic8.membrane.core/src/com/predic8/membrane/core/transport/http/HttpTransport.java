@@ -36,9 +36,9 @@ public class HttpTransport extends Transport {
 	public static final String HEADER_HOST = "com.predic8.membrane.transport.http.header.Host";
 	public static final String SOURCE_IP = "com.predic8.membrane.transport.http.source.Ip";
 
-	private int socketTimeout = 30000;
+	private int socketTimeout = 1000 * 20; // skb was 30000
 	private boolean tcpNoDelay = true;
-	private int httpClientRetries = 5;
+	private int httpClientRetries = 2;  // skb was 5
 	
 	public Hashtable<Integer, HttpEndpointListener> portListenerMapping = new Hashtable<Integer, HttpEndpointListener>();
 
