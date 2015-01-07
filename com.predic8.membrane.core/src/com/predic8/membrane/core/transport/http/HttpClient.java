@@ -42,7 +42,7 @@ public class HttpClient {
 	
 	private int timeBetweenTries = 250;
 
-	private int maxRetries = 5;
+	private int maxRetries = 2; // skb was 5
 	
 	private ConnectionManager conMgr = new ConnectionManager();
 	
@@ -221,9 +221,12 @@ public class HttpClient {
 			response.read(con.in, false);
 			log.debug("Status code response on CONNECT request: " + response.getStatusCode());
 		}
+		
+		log.info("Tunneling connection...");
+		
 		exc.getRequest().setUri(Constants.N_A);
-		new TunnelThread(con.in, exc.getServerThread().getSrcOut(), "Onward Thread").start();
-		new TunnelThread(exc.getServerThread().getSrcIn(), con.out, "Backward Thread").start();
+		new TunnelThread(con.in, exc.getServerThread().getSrcOut(), "Onward Thread").start(); // intended destination
+		new TunnelThread(exc.getServerThread().getSrcIn(), con.out, "Backward Thread").start(); // originator
 	}
 
 	private void do100ExpectedHandling(Exchange exc, Response response, Connection con) throws IOException, EndOfStreamException {
