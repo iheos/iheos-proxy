@@ -304,7 +304,7 @@ public class ToolkitRepositoryExchangeStore extends AbstractExchangeStore {
 			counter++;
 
 		if (repos == null) {
-        	log.error("Repository not initialized -- transaction capture escaped!");
+        	log.error("-- Repository not initialized -- transaction capture escaped!");
             return;        	
         }
 
@@ -363,8 +363,8 @@ public class ToolkitRepositoryExchangeStore extends AbstractExchangeStore {
 
     private void saveArtifacts(Asset msgType, Message msg , boolean isReq, String[] gatewayHCIDs, String bodyContentType, String txDetailCsv) throws Exception {
     	
-		Asset msgHeader = null;
-		Asset msgBody = null;		
+		Asset msgHeader = null;		
+		Asset msgBody = null;
 		String hdrType = (isReq)?"reqHdrType":"resHdrType";
 		String bodyType = (isReq)?"reqBodyType":"resBodyType";
 		
@@ -379,17 +379,50 @@ public class ToolkitRepositoryExchangeStore extends AbstractExchangeStore {
 			msg.getHeader().write(os);
 			os.write((Constants.CRLF).getBytes());
 			msgHeader.updateContent(os.toByteArray());
-			msgHeader = msgType.addChild(msgHeader);
+			msgHeader = msgType.addChild(msgHeader);			
 			
-			if (!msg.isBodyEmpty()) {						
-		        msgBody = repos.createNamedAsset("Message", null, new SimpleType(bodyType), msgType.getId().getIdString()+"_Message");
-		        msgBody.setProperty(PropertyKey.DISPLAY_ORDER, "2");
-		        if (bodyContentType!=null) {
-		        	msgBody.setMimeType(bodyContentType);
-		        }
-	
-		        msgBody.updateContent(msg.getBody().getRaw());
-		        msgBody = msgType.addChild(msgBody);
+			if (!msg.isBodyEmpty()) {
+				
+				if (msg.getHeader().isChunked()) {
+					msgBody = repos.createNamedAsset("Message", null, new SimpleType(bodyType), msgType.getId().getIdString()+"_Message");
+					msgBody.setProperty(PropertyKey.DISPLAY_ORDER, "2");
+			        if (bodyContentType!=null) {
+			        	msgBody.setMimeType(bodyContentType);
+			        }
+
+			        msgBody.updateContent(msg.getBody().getContent());					
+					msgBody = msgType.addChild(msgBody);
+					
+					// Add raw message as a child to the formatted message above
+					Asset msgBodyRaw = null;
+					
+					msgBodyRaw = repos.createNamedAsset("ChunkedMessage", null, new SimpleType(bodyType), msgType.getId().getIdString()+"_ChunkedMessage");
+					msgBodyRaw.setProperty(PropertyKey.DISPLAY_ORDER, "1");
+			        if (bodyContentType!=null) {
+			        	msgBodyRaw.setMimeType(bodyContentType);
+			        }
+		
+			        msgBodyRaw.updateContent(msg.getBody().getRaw());
+			        
+			        msgBodyRaw = msgBody.addChild(msgBodyRaw);    		        
+
+
+				} else {
+
+					// Add raw message					
+					
+					msgBody = repos.createNamedAsset("Message", null, new SimpleType(bodyType), msgType.getId().getIdString()+"_Message");
+					msgBody.setProperty(PropertyKey.DISPLAY_ORDER, "1");
+			        if (bodyContentType!=null) {
+			        	msgBody.setMimeType(bodyContentType);
+			        }
+		
+			        msgBody.updateContent(msg.getBody().getRaw());
+			        
+			        msgBody = msgType.addChild(msgBody);    		        
+
+				}
+		        
 			}			
 		} catch (Exception ex) {
 	        log.warn(ex.toString());
@@ -466,7 +499,7 @@ public class ToolkitRepositoryExchangeStore extends AbstractExchangeStore {
         try {
 	        Hashtable<String,String> env = new Hashtable<String, String>();
 	        env.put(Context.INITIAL_CONTEXT_FACTORY, FFMQConstants.JNDI_CONTEXT_FACTORY);
-	        env.put(Context.PROVIDER_URL, "tcp://localhost:10002"); // FFMQ server
+	        env.put(Context.PROVIDER_URL, "tcp://localhost:10002"); // FFMQ server. The proxy and the FFMQ-JMS server are usually setup on the same host, so use localhost.  
 	        Context context = new InitialContext(env);
 	
 	        // Lookup a connection factory in the context
