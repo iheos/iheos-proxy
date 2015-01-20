@@ -117,7 +117,7 @@ public class ApplicationCachePreLoader {
 	 * see ILT-365 WBS reference code I.b.i.
 	 */
 	public static void init() {
-		log.info("Enter init() for ApplicationCachePreLoader"); 
+		log.info("Enter init() for ApplicationCachePreLoader");
 		Connection con = null;
 		
 		if (preLoaderState==PreLoaderState.UNINITIALIZED) {
