@@ -43,6 +43,7 @@ import javax.jms.DeliveryMode;
 import javax.jms.QueueConnectionFactory;
 import javax.naming.Context;
 import javax.naming.InitialContext;
+import javax.naming.NamingException;
 
 import net.timewalker.ffmq3.FFMQConstants;
 
@@ -120,7 +121,7 @@ public class ToolkitRepositoryExchangeStore extends AbstractExchangeStore {
         Installation.installation();
 		try {
 			if (Installation.installation().getExternalCache()==null) {
-				File tpPath = new File(getToolkitInstallationPath(),  "WEB-INF"+ File.separator + Installation.TOOLKIT_PROPERTIES);
+				File tpPath = new File(getToolkitInstallationPath(),  Installation.TOOLKIT_PROPERTIES);
 				
 				Properties props = new Properties();
 				
@@ -322,15 +323,16 @@ public class ToolkitRepositoryExchangeStore extends AbstractExchangeStore {
 			Asset ioHeader = null;
 			
 			if (isReq) {
-		        Type simpleType = new SimpleType("simpleType");
+		        Type tranIoMessage = new SimpleType("tranIoMessage");
 		        //set id+nao, create asset, create new child asset with id as parent+"In_Out", set displayOrder
 		                
-		        Asset txRecord = repos.createNamedAsset(parentName/*displayName*/, null, simpleType, parentName);
+		        Asset txRecord = repos.createNamedAsset(parentName/*displayName*/, null, new SimpleType("transaction"), parentName);
 		        
-		        ioHeader = repos.createNamedAsset("Input/Output Messages", null, simpleType, ioHeaderId);		        
+		        ioHeader = repos.createNamedAsset("Input/Output Messages", null, tranIoMessage, ioHeaderId);		        
 		        ioHeader = txRecord.addChild(ioHeader);
 			} else {
 				// Deep scan: ioHeader = repos.getAsset(new SimpleId(ioHeaderId));
+				Thread.sleep(1500); // This is to give extra time for the request folder to be created so we don't pick up the non-parent intermediate file
 				ioHeader = repos.getAssetByRelativePath(new File((String)exc.getProperty(ioHeaderId)));
 			}
 			
@@ -355,9 +357,9 @@ public class ToolkitRepositoryExchangeStore extends AbstractExchangeStore {
 			String contentType = (isReq)?exc.getRequestContentType():exc.getResponseContentType();
 			saveArtifacts(msgType, msg, isReq, null, contentType, txDetailCsv);
 						
-		} catch (Exception ex) {
-			log.error(ex.toString());
-			ex.printStackTrace();
+		} catch (Throwable t) {
+			log.error(t.toString());
+			t.printStackTrace();
 		}		
 	}
 
@@ -485,6 +487,8 @@ public class ToolkitRepositoryExchangeStore extends AbstractExchangeStore {
     }
     
     
+   
+    
     private void sendMessage(String txDetail, String msgType, String parentLoc, String ioParentId, String repId, String acs, String headerLoc, String bodyLoc, String proxyDetail, String fromIp, String toIp, String fromHostName, String toHostName) {
         log.debug("\n enter sendMessage \n");
         
@@ -493,30 +497,29 @@ public class ToolkitRepositoryExchangeStore extends AbstractExchangeStore {
         	return;
         }
         
-        javax.jms.QueueConnection connection = null;
-        javax.jms.QueueSession session = null;
+        javax.jms.TopicConnection connection = null;       
+        javax.jms.TopicSession session = null;
         
         try {
 	        Hashtable<String,String> env = new Hashtable<String, String>();
 	        env.put(Context.INITIAL_CONTEXT_FACTORY, FFMQConstants.JNDI_CONTEXT_FACTORY);
 	        env.put(Context.PROVIDER_URL, "tcp://localhost:10002"); // FFMQ server. The proxy and the FFMQ-JMS server are usually setup on the same host, so use localhost.  
 	        Context context = new InitialContext(env);
-	
-	        // Lookup a connection factory in the context
-	        javax.jms.QueueConnectionFactory factory = (QueueConnectionFactory) context.lookup(FFMQConstants.JNDI_QUEUE_CONNECTION_FACTORY_NAME);
-	
-	        connection = factory.createQueueConnection();
-	                
-
-	        javax.jms.QueueSender sender = null;
-	
-	        session = connection.createQueueSession(false,
-	        javax.jms.Session.AUTO_ACKNOWLEDGE);
+		         
+    		// Lookup a connection factory in the context
+	        javax.jms.TopicConnectionFactory factory = (javax.jms.TopicConnectionFactory) context.lookup(FFMQConstants.JNDI_TOPIC_CONNECTION_FACTORY_NAME);
 	        
-        // Create the Queue and QueueSender for sending requests.
-            javax.jms.Queue queue = null;
-            queue = session.createQueue("txmon");
-            sender = session.createSender(queue);
+	        connection = factory.createTopicConnection();	        
+	                
+			javax.jms.TopicPublisher sender = null;
+	        
+			session = connection.createTopicSession(false, javax.jms.Session.AUTO_ACKNOWLEDGE);
+	        
+			// Create the Queue and QueueSender for sending requests.
+			javax.jms.Topic destination = null;
+			
+			destination = session.createTopic("txmon");
+			sender = session.createPublisher(destination);
 
             // Now that all setup is complete, start the Connection and send the
             // message.
@@ -560,7 +563,7 @@ public class ToolkitRepositoryExchangeStore extends AbstractExchangeStore {
             
             log.debug("\n *************** sendMessage()\n");
         } catch (Exception ex) {
-            log.error("\n *************** Error inserting into the queue \n");
+            log.error("\n *************** Error inserting into the destination \n");
             log.error(ex.toString());
             ex.printStackTrace();
         } finally {
@@ -578,6 +581,119 @@ public class ToolkitRepositoryExchangeStore extends AbstractExchangeStore {
         }
 
     }
+
+
+    
+
+    /**
+     * Queue based sendMessage
+
+    private void sendMessage(String txDetail, String msgType, String parentLoc, String ioParentId, String repId, String acs, String headerLoc, String bodyLoc, String proxyDetail, String fromIp, String toIp, String fromHostName, String toHostName) {
+        log.debug("\n enter sendMessage \n");
+        
+        if (txDetail==null) {
+        	log.debug("\n empty txDetail, exit sendMessage\n");
+        	return;
+        }
+        
+//        javax.jms.QueueConnection connection = null;
+        javax.jms.TopicConnection connection = null;
+        
+//        javax.jms.QueueSession session = null;
+        javax.jms.TopicSession session = null;
+        
+        try {
+	        Hashtable<String,String> env = new Hashtable<String, String>();
+	        env.put(Context.INITIAL_CONTEXT_FACTORY, FFMQConstants.JNDI_CONTEXT_FACTORY);
+	        env.put(Context.PROVIDER_URL, "tcp://localhost:10002"); // FFMQ server. The proxy and the FFMQ-JMS server are usually setup on the same host, so use localhost.  
+	        Context context = new InitialContext(env);
+		         
+    		// Lookup a connection factory in the context using a queue
+//    		javax.jms.QueueConnectionFactory factory = (QueueConnectionFactory) context.lookup(FFMQConstants.JNDI_QUEUE_CONNECTION_FACTORY_NAME);
+	        javax.jms.TopicConnectionFactory factory = (javax.jms.TopicConnectionFactory) context.lookup(FFMQConstants.JNDI_TOPIC_CONNECTION_FACTORY_NAME);
+	        
+	
+//			connection = factory.createQueueConnection();
+			connection = factory.createTopicConnection();	        
+	                
+
+//	        javax.jms.QueueSender sender = null;
+			javax.jms.TopicPublisher sender = null;
+	        
+	
+//	        session = connection.createQueueSession(false, javax.jms.Session.AUTO_ACKNOWLEDGE);
+			session = connection.createTopicSession(false, javax.jms.Session.AUTO_ACKNOWLEDGE);
+	        
+        // Create the Queue and QueueSender for sending requests.
+//            javax.jms.Queue destination = null;
+			javax.jms.Topic destination = null;
+			
+//			destination = session.createQueue("txmon");
+			destination = session.createTopic("txmon");
+//            sender = session.createSender(queue);
+			sender = session.createPublisher(destination);
+
+            // Now that all setup is complete, start the Connection and send the
+            // message.
+            connection.start();
+        
+        
+            log.debug("\nBefore inserting into the queue for transactionId:"
+                    + txDetail);
+
+            javax.jms.MapMessage mapMsg = session.createMapMessage();
+            mapMsg.setJMSDeliveryMode(DeliveryMode.PERSISTENT);
+            mapMsg.setObject("txDetail", txDetail);
+            if (parentLoc!=null)
+            	mapMsg.setObject("parentLoc", parentLoc);            
+            if (ioParentId!=null)
+            	mapMsg.setObject("ioHeaderId", ioParentId);            
+            if (repId!=null)
+            	mapMsg.setObject("repId", repId);
+            if (acs!=null)
+            	mapMsg.setObject("acs", acs);
+            if (headerLoc!=null)
+            	mapMsg.setObject("headerLoc", headerLoc);
+            if (bodyLoc!=null)
+            	mapMsg.setObject("bodyLoc", bodyLoc);
+            if (msgType!=null)
+            	mapMsg.setObject("msgType", msgType);
+            if (proxyDetail!=null)
+            	mapMsg.setObject("proxyDetail", proxyDetail);
+            if (fromIp!=null)
+            	mapMsg.setObject(MESSAGE_FROM_IP_ADDRESS, fromIp);
+            if (fromHostName!=null)
+            	mapMsg.setObject(MESSAGE_FROM, fromHostName);
+            if (toIp!=null)
+            	mapMsg.setObject(FORWARD_TO_IP_ADDRESS, toIp);
+            if (toHostName!=null)
+            	mapMsg.setObject(FORWARD_TO, toHostName);
+	        
+
+            sender.send(mapMsg);
+                      
+            
+            log.debug("\n *************** sendMessage()\n");
+        } catch (Exception ex) {
+            log.error("\n *************** Error inserting into the destination \n");
+            log.error(ex.toString());
+            ex.printStackTrace();
+        } finally {
+        	// Clean up
+        	if (session!=null) {
+                try {
+    				session.close();
+    			} catch (Exception ex) {}        		
+        	}
+        	if (connection!=null) {
+                try {
+    				connection.close();
+    			} catch (Exception e) {}        		
+        	}
+        }
+
+    }
+    */
 
     /*
      * ActiveMq based - not used
