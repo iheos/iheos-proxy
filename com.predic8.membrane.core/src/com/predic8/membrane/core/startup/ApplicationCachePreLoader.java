@@ -84,21 +84,26 @@ public class ApplicationCachePreLoader {
 		if (gatewayAddress!=null)
 			gatewayAddress = gatewayAddress.toLowerCase();
 		
+		if ("localhost".equalsIgnoreCase(gatewayAddress) || "0.0.0.0.0.0.0.1".equals(gatewayAddress) || "127.0.0.1".equals(gatewayAddress) ) {
+			 return new GatewayTag("localhost","","");
+		} 
+		
 		if (preLoaderState==PreLoaderState.INITIALIZED) {
 			GatewayTag gTag = gatewayList.get(gatewayAddress);
 			
+			log.info("map size: " + gatewayList.size());
+			
 			if (gTag==null) {//DNSCache.java: canonical returned short name
 				for (String key : gatewayList.keySet()) {
+					if ("localhost".equals(key))
+						continue;
+					
 					String[] fqdn = key.split(SPLITTER_DOT);
-					if ("localhost".equalsIgnoreCase(gatewayAddress) || "0.0.0.0.0.0.0.1".equals(gatewayAddress) || "127.0.0.1".equals(gatewayAddress) ) {
-						 return gatewayList.get(key);
-					} else if (fqdn.length>1) {
+					if (fqdn.length>1) {
 						if (fqdn[0].equalsIgnoreCase(gatewayAddress)) {
 							return gatewayList.get(key);
 						} 
-					} else {
-						log.error("Setup error: Gateway view does not have a FQDN host name:"+key);
-					}					
+					} 				
 				}
 					
 			} else 
@@ -125,12 +130,8 @@ public class ApplicationCachePreLoader {
 			if ("local".equals(getDefinitionSource()) && getHostNames()!=null) {			
 				
 				for (String hostName : getHostNames()) {
-		        	GatewayTag gTag = new GatewayTag();
-		        	gTag.setGatewayAddress(hostName);
-			    	gTag.setHostedBy("");
-			        gTag.setHCID("");
-		        	gatewayList.put(hostName, gTag);			        	
-		        	log.debug("Loaded gatewayTagDataSetDef for hostName:"+ hostName);					
+		        	gatewayList.put(hostName, new GatewayTag(hostName,"",""));			        	
+		        	log.info("Loaded gatewayTagDataSetDef for hostName:"+ hostName);					
 				}
 				preLoaderState = PreLoaderState.INITIALIZED;
 

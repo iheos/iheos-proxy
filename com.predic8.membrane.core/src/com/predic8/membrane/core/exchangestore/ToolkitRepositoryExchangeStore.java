@@ -40,6 +40,7 @@ import java.util.List;
 import java.util.Properties;
 
 import javax.jms.DeliveryMode;
+import javax.jms.JMSException;
 import javax.jms.QueueConnectionFactory;
 import javax.naming.Context;
 import javax.naming.InitialContext;
@@ -228,7 +229,7 @@ public class ToolkitRepositoryExchangeStore extends AbstractExchangeStore {
 	    		
 	    		log.debug("*** " + exc.getTimeReqReceived() + " -- " + exc.getTimeReqSent() + " -- " +  exc.getTimeResReceived() + " -- " + exc.getTimeResSent() );
 	    		
-	    		String initiatingHost =  exc.getServer();
+	    		String initiatingHost =  exc.getSourceHostname(); //exc.getServer();
 	    		
 	    		String respondingHost = ((ForwardingRule)exc.getRule()).getTargetHost();
 	    		
@@ -245,10 +246,16 @@ public class ToolkitRepositoryExchangeStore extends AbstractExchangeStore {
 
 	    		String messageFromIp = exc.getSourceIp();
 
-	    		if (hostDetails==null) {
-	    			log.info("hostDetails are not available. messageFromIp: <" + messageFromIp + ">, initiatingHost:" + initiatingHost);
+	    		try {
+//	    		if (hostDetails==null) {
+	    			log.info("messageFromIp: <" + messageFromIp + ">, initiatingHost:" + initiatingHost + " respondingHost: " + respondingHost);
+//	    		} else {
+	    			log.info("Initiator[0]: " +  hostDetails[0] + "; Responder[1]: " +  hostDetails[1]);  
+//	    		}
+	    		} catch (Throwable t) {
+	    			
 	    		}
-	    		String messageFrom = ((hostDetails!=null && hostDetails.length==3)?hostDetails[2]:messageFromIp); // initiatingHost -- This seems to be incorrect when the hostname fails to resolve and the initiatingHost is the server not the client.
+	    		String messageFrom = ((hostDetails!=null && hostDetails.length>0)?hostDetails[0]:messageFromIp); // initiatingHost -- This seems to be incorrect when the hostname fails to resolve and the initiatingHost is the server not the client.
 	    		String forwardPort = ":" + ((ForwardingRule)exc.getRule()).getTargetPort();
 				forwardToIp += forwardPort;
 	    		String forwardTo = ((ForwardingRule)exc.getRule()).getTargetHost() + forwardPort; // The real server destination address to receive the response from.
@@ -312,13 +319,12 @@ public class ToolkitRepositoryExchangeStore extends AbstractExchangeStore {
 
 		Message msg = exc.getResponse() == null ? exc.getRequest() : exc
 				.getResponse();
-		//
 		
 		try {
 			boolean isReq = exc.getResponse() == null;
 
-	        SimpleDateFormat sdf = new SimpleDateFormat("yyyy_MM_dd_kk_mm_ss_SS");        
-	        String parentName = sdf.format(exc.getTime().getTime()) + "_" + exc.getNanoTime();
+	                
+	        String parentName = getFileNamePart(exc);
 	        String ioHeaderId = parentName+"_io";
 			Asset ioHeader = null;
 			
@@ -328,11 +334,11 @@ public class ToolkitRepositoryExchangeStore extends AbstractExchangeStore {
 		                
 		        Asset txRecord = repos.createNamedAsset(parentName/*displayName*/, null, new SimpleType("transaction"), parentName);
 		        
-		        ioHeader = repos.createNamedAsset("Input/Output Messages", null, tranIoMessage, ioHeaderId);		        
+		        ioHeader = repos.createNamedAsset("Input Output Messages", null, tranIoMessage, ioHeaderId);		        
 		        ioHeader = txRecord.addChild(ioHeader);
 			} else {
 				// Deep scan: ioHeader = repos.getAsset(new SimpleId(ioHeaderId));
-				Thread.sleep(1500); // This is to give extra time for the request folder to be created so we don't pick up the non-parent intermediate file
+				Thread.sleep(1200); 
 				ioHeader = repos.getAssetByRelativePath(new File((String)exc.getProperty(ioHeaderId)));
 			}
 			
@@ -349,31 +355,54 @@ public class ToolkitRepositoryExchangeStore extends AbstractExchangeStore {
 	        setTxProperties(msgType, exc, isReq);
 	        String txDetailCsv = getTxDetailCsv(parentName, msgType, isReq).toString();
 	        
+	        
 	        msgType = ioHeader.addChild(msgType);
 	        if (isReq) {
-		    	exc.setProperty(ioHeaderId, ioHeader.getPropFileRelativePart());	
+		    	exc.setProperty(ioHeaderId, ioHeader.getPropFileRelativePart());
+		    	exc.setProperty("requestMsg", msgType);
 	        }
 
 			String contentType = (isReq)?exc.getRequestContentType():exc.getResponseContentType();
-			saveArtifacts(msgType, msg, isReq, null, contentType, txDetailCsv);
+			
+			saveArtifacts(exc, msgType, msg, isReq, null, contentType, txDetailCsv);
+			
+
 						
 		} catch (Throwable t) {
 			log.error(t.toString());
 			t.printStackTrace();
 		}		
 	}
+	
+	private synchronized String getFileNamePart(AbstractExchange exc) {
+        SimpleDateFormat sdf = new SimpleDateFormat("yyyy_MM_dd_kk_mm_ss_SS");        
+        String parentName = sdf.format(exc.getTime().getTime()) + "_" + exc.getNanoTime();
+       
+        return parentName;
+	}
 
-    private void saveArtifacts(Asset msgType, Message msg , boolean isReq, String[] gatewayHCIDs, String bodyContentType, String txDetailCsv) throws Exception {
+    private void saveArtifacts(AbstractExchange exc, Asset msgType, Message msg , boolean isReq, String[] gatewayHCIDs, String bodyContentType, String txDetailCsv) throws Exception {
     	
 		Asset msgHeader = null;		
 		Asset msgBody = null;
 		String hdrType = (isReq)?"reqHdrType":"resHdrType";
 		String bodyType = (isReq)?"reqBodyType":"resBodyType";
+		String msgTypeStr = (isReq?"REQUEST":"RESPONSE");
 		
         msgHeader = repos.createNamedAsset("Header", null, new SimpleType(hdrType), msgType.getId().getIdString()+"_Header");
         msgHeader.setProperty(PropertyKey.DISPLAY_ORDER, "1");
-       	msgHeader.setMimeType("text/plain");
-
+       	msgHeader.setMimeType("text/plain");       	
+       
+       	msgHeader.setProperty("msgType", msgTypeStr);
+       	msgHeader.setProperty(MESSAGE_FROM_IP_ADDRESS, msgType.getProperty(MESSAGE_FROM_IP_ADDRESS));
+       	msgHeader.setProperty(FORWARD_TO_IP_ADDRESS, msgType.getProperty(FORWARD_TO_IP_ADDRESS));
+       	msgHeader.setProperty(MESSAGE_FROM, msgType.getProperty(MESSAGE_FROM));
+       	msgHeader.setProperty(FORWARD_TO, msgType.getProperty(FORWARD_TO));
+       	
+       	msgHeader.setProperty("txDetailCsv", txDetailCsv);
+       	
+		String proxyDetail = (PROXY_HOST + ": " + msgType.getProperty(PROXY_HOST) + ":" + msgType.getProperty(PROXY_PORT) + ", " + PROXY_RULE_MAPPING_NAME + ": " + msgType.getProperty(PROXY_RULE_MAPPING_NAME));
+       	msgHeader.setProperty("proxyDetail", proxyDetail);
 
 		ByteArrayOutputStream os = new ByteArrayOutputStream();
 		try {
@@ -392,6 +421,7 @@ public class ToolkitRepositoryExchangeStore extends AbstractExchangeStore {
 			        	msgBody.setMimeType(bodyContentType);
 			        }
 
+			        msgBody.setProperty("msgType", msgTypeStr);
 			        msgBody.updateContent(msg.getBody().getContent());					
 					msgBody = msgType.addChild(msgBody);
 					
@@ -434,63 +464,50 @@ public class ToolkitRepositoryExchangeStore extends AbstractExchangeStore {
 		
 		log.debug("Tx detail info: " + txDetailCsv);
 		
-		try {
-    		sendMessage( 
-    				 txDetailCsv
-    				, (isReq?"REQUEST":"RESPONSE")
-    				, msgType.getPropFileRelativePart()    				
-    				, msgType.getProperty(PropertyKey.PARENT_ID)
-    				, msgHeader.getRepository().getIdString()
-    				, msgHeader.getSource().getAccess().name()    			
-    				, msgHeader.getPropFileRelativePart(), (msgBody!=null?msgBody.getPropFileRelativePart():null)
-    				, (PROXY_HOST + ": " + msgType.getProperty(PROXY_HOST) + ":" + msgType.getProperty(PROXY_PORT) + ", " + PROXY_RULE_MAPPING_NAME + ": " + msgType.getProperty(PROXY_RULE_MAPPING_NAME))
-    				, msgType.getProperty(MESSAGE_FROM_IP_ADDRESS)
-    				, msgType.getProperty(FORWARD_TO_IP_ADDRESS)
-    				, msgType.getProperty(MESSAGE_FROM)
-    				, msgType.getProperty(FORWARD_TO)
-    		        );
-    	} catch (Exception ex) {
-    		log.warn(ex.toString());
-    	}
+		if (isReq) {
+			exc.setProperty("reposId", msgHeader.getRepository().getIdString());
+			exc.setProperty("reposSrc", msgHeader.getSource().getAccess().name());
+			exc.setProperty("msgHeaderPropRelativePart", msgHeader.getPropFileRelativePart());
+			exc.setProperty("msgBodyPropRelativePart", (msgBody!=null?msgBody.getPropFileRelativePart():null));
+			exc.setProperty("txDetailCsv", txDetailCsv);
+			exc.setProperty("proxyDetail", proxyDetail);
+		}
+		
+
+		
+		
+		if (!isReq) {
+			log.info("Response received. Sending message...");
+			try {
+	    		sendMessage(
+	    				exc
+	    				 , txDetailCsv
+	    				, msgTypeStr
+	    				, msgType.getPropFileRelativePart()    				
+	    				, msgType.getProperty(PropertyKey.PARENT_ID)
+	    				, msgHeader.getRepository().getIdString()
+	    				, msgHeader.getSource().getAccess().name()    			
+	    				, msgHeader.getPropFileRelativePart() 
+	    				, (msgBody!=null?msgBody.getPropFileRelativePart():null)
+	    				, proxyDetail
+	    				, msgType.getProperty(MESSAGE_FROM_IP_ADDRESS)
+	    				, msgType.getProperty(FORWARD_TO_IP_ADDRESS)
+	    				, msgType.getProperty(MESSAGE_FROM)
+	    				, msgType.getProperty(FORWARD_TO)
+	    		        );
+	    	} catch (Exception ex) {
+	    		log.warn(ex.toString());
+	    	}			
+		}
+		
     }
 
-    private String[] getHostDetail(String initiatingHost, String respondingHost) {
-    	log.debug("i: " + initiatingHost + ",r: " + respondingHost);
-    	
-        if (getAppCache() != null) {            
-
-            String[] excProvider = new String[] { initiatingHost, respondingHost, "", "" };
-            GatewayTag gTagInitiator = null; 
-            GatewayTag gTagResponder = null;
-                        
-
-            gTagInitiator = getAppCache().getGatewayTagMap(initiatingHost);
-            gTagResponder = getAppCache().getGatewayTagMap(respondingHost);
-            
-            if (gTagInitiator != null && gTagInitiator.getHCID() != null) {
-                excProvider[0] = gTagInitiator.getHCID();
-            }
-            if (gTagResponder != null && gTagResponder.getHCID() != null) {
-                excProvider[1] = gTagResponder.getHCID();
-            }
-
-            if (gTagInitiator != null && gTagResponder != null) {
-                    excProvider[2] = gTagInitiator.getGatewayAddress();
-                    excProvider[3] = gTagResponder.getGatewayAddress();
-            }
-
-            return excProvider;
-        } else {
-            log.error("Error in resolving HCIDs: appCache or exchange error!");
-        }
-        return null;
-    }
-    
-    
    
     
-    private void sendMessage(String txDetail, String msgType, String parentLoc, String ioParentId, String repId, String acs, String headerLoc, String bodyLoc, String proxyDetail, String fromIp, String toIp, String fromHostName, String toHostName) {
+    private void sendMessage(AbstractExchange exc, String txDetail, String msgType, String parentLoc, String ioParentId, String repId, String acs, String headerLoc, String bodyLoc, String proxyDetail, String fromIp, String toIp, String fromHostName, String toHostName) {
         log.debug("\n enter sendMessage \n");
+        
+        Asset requestMsg = (Asset)exc.getProperty("requestMsg");
         
         if (txDetail==null) {
         	log.debug("\n empty txDetail, exit sendMessage\n");
@@ -531,31 +548,36 @@ public class ToolkitRepositoryExchangeStore extends AbstractExchangeStore {
 
             javax.jms.MapMessage mapMsg = session.createMapMessage();
             mapMsg.setJMSDeliveryMode(DeliveryMode.PERSISTENT);
-            mapMsg.setObject("txDetail", txDetail);
-            if (parentLoc!=null)
-            	mapMsg.setObject("parentLoc", parentLoc);            
-            if (ioParentId!=null)
-            	mapMsg.setObject("ioHeaderId", ioParentId);            
-            if (repId!=null)
-            	mapMsg.setObject("repId", repId);
-            if (acs!=null)
-            	mapMsg.setObject("acs", acs);
-            if (headerLoc!=null)
-            	mapMsg.setObject("headerLoc", headerLoc);
-            if (bodyLoc!=null)
-            	mapMsg.setObject("bodyLoc", bodyLoc);
-            if (msgType!=null)
-            	mapMsg.setObject("msgType", msgType);
-            if (proxyDetail!=null)
-            	mapMsg.setObject("proxyDetail", proxyDetail);
-            if (fromIp!=null)
-            	mapMsg.setObject(MESSAGE_FROM_IP_ADDRESS, fromIp);
-            if (fromHostName!=null)
-            	mapMsg.setObject(MESSAGE_FROM, fromHostName);
-            if (toIp!=null)
-            	mapMsg.setObject(FORWARD_TO_IP_ADDRESS, toIp);
-            if (toHostName!=null)
-            	mapMsg.setObject(FORWARD_TO, toHostName);
+
+            setMapMsg((String)exc.getProperty("txDetailCsv")
+            		, "REQUEST"
+    				, requestMsg.getPropFileRelativePart()
+    				, requestMsg.getProperty(PropertyKey.PARENT_ID)
+    				, (String)exc.getProperty("reposId")
+    				, (String)exc.getProperty("reposSrc")
+    				, (String)exc.getProperty("msgHeaderPropRelativePart")
+    				, (String)exc.getProperty("msgBodyPropRelativePart")
+    				, (String)exc.getProperty("proxyDetail")
+    				, requestMsg.getProperty(MESSAGE_FROM_IP_ADDRESS)
+    				, requestMsg.getProperty(FORWARD_TO_IP_ADDRESS)
+    				, requestMsg.getProperty(MESSAGE_FROM)
+    				, requestMsg.getProperty(FORWARD_TO)            		
+            		, mapMsg);
+            
+            setMapMsg(txDetail
+            		, msgType
+            		, parentLoc
+            		, ioParentId
+            		, repId
+            		, acs
+            		, headerLoc
+            		, bodyLoc
+            		, proxyDetail
+            		, fromIp
+            		, toIp
+            		, fromHostName
+            		, toHostName
+            		, mapMsg);
 	        
 
             sender.send(mapMsg);
@@ -582,7 +604,68 @@ public class ToolkitRepositoryExchangeStore extends AbstractExchangeStore {
 
     }
 
+	private void setMapMsg(String txDetail, String msgType, String parentLoc,
+			String ioParentId, String repId, String acs, String headerLoc,
+			String bodyLoc, String proxyDetail, String fromIp, String toIp,
+			String fromHostName, String toHostName, javax.jms.MapMessage mapMsg)
+			throws JMSException {
+		mapMsg.setObject(msgType+"_txDetail", txDetail);
+		if (parentLoc!=null)
+			mapMsg.setObject(msgType+"_parentLoc", parentLoc);            
+		if (ioParentId!=null)
+			mapMsg.setObject(msgType+"_ioHeaderId", ioParentId);            
+		if (repId!=null)
+			mapMsg.setObject(msgType+"_repId", repId);
+		if (acs!=null)
+			mapMsg.setObject(msgType+"_acs", acs);
+		if (headerLoc!=null)
+			mapMsg.setObject(msgType+"_headerLoc", headerLoc);
+		if (bodyLoc!=null)
+			mapMsg.setObject(msgType+"_bodyLoc", bodyLoc);
+		if (msgType!=null)
+			mapMsg.setObject(msgType+"_msgType", msgType);
+		if (proxyDetail!=null)
+			mapMsg.setObject(msgType+"_proxyDetail", proxyDetail);
+		if (fromIp!=null)
+			mapMsg.setObject(msgType+"_"+MESSAGE_FROM_IP_ADDRESS, fromIp);
+		if (fromHostName!=null)
+			mapMsg.setObject(msgType+"_"+MESSAGE_FROM, fromHostName);
+		if (toIp!=null)
+			mapMsg.setObject(msgType+"_"+FORWARD_TO_IP_ADDRESS, toIp);
+		if (toHostName!=null)
+			mapMsg.setObject(msgType+"_"+FORWARD_TO, toHostName);
+	}
 
+
+
+    private String[] getHostDetail(String initiatingHost, String respondingHost) {
+    	log.debug("i: " + initiatingHost + ",r: " + respondingHost);
+    	
+        if (getAppCache() != null) {            
+
+            String[] excProvider = new String[] { initiatingHost, respondingHost, "", "" };
+            GatewayTag gTagInitiator = null; 
+            GatewayTag gTagResponder = null;
+                        
+
+            gTagInitiator = getAppCache().getGatewayTagMap(initiatingHost);
+            gTagResponder = getAppCache().getGatewayTagMap(respondingHost);
+            
+          
+
+            if (gTagInitiator != null) 
+                    excProvider[0] = gTagInitiator.getGatewayAddress();
+            if (gTagResponder != null) 
+                    excProvider[1] = gTagResponder.getGatewayAddress();
+            
+
+            return excProvider;
+        } else {
+            log.error("Error in resolving HCIDs: appCache or exchange error!");
+        }
+        return null;
+    }
+    
     
 
     /**
