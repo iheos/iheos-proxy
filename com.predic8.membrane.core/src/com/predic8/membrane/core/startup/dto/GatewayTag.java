@@ -14,6 +14,17 @@ public class GatewayTag {
 	private String HCID;
 	private String hostedBy;	
 	
+	
+	
+	public GatewayTag() {
+		super();
+	}
+	public GatewayTag(String gatewayAddress, String hCID, String hostedBy) {
+		super();
+		this.gatewayAddress = gatewayAddress;
+		HCID = hCID;
+		this.hostedBy = hostedBy;
+	}
 	/**
 	 * @return the gatewayAddress
 	 */
