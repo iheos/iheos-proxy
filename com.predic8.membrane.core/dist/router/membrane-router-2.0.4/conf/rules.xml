@@ -1,63 +1,46 @@
 <?xml version = "1.0" ?>
 <configuration>
-  <rules>
-    <forwarding-rule name="localcap"
-                      port="8001"
-                      blockRequest="false"
-                      blockResponse="false"
-                      inboundTLS="false"
-                      outboundTLS="false"
-                      host="localhost"
-                      method="*">
-      <targetport>12090</targetport>
-      <targethost>ihexds.nist.gov</targethost>
-      <interceptors>
-        <interceptor id="urlRewriter"
-                      name="Simple URL Rewriter" />
-      </interceptors>
-    </forwarding-rule>
-    <!-- 
-    <forwarding-rule name="localcap-gwt"
-                      port="8008"
-                      blockRequest="false"
-                      blockResponse="false"
-                      inboundTLS="false"
-                      outboundTLS="false"
-                      host="localhost"
-                      method="*">
-      <targetport>8888</targetport>
-      <targethost>localhost</targethost>
-      <interceptors>
-        <interceptor id="urlRewriter"
-                      name="Simple URL Rewriter" />
-      </interceptors>
-    </forwarding-rule>
- 	-->
-  </rules>
-  <global>
-    <adjustHostHeader>false</adjustHostHeader>
-  </global>
-  <gui>
-    <autotrackexchange>true</autotrackexchange>
-    <indentMessage>true</indentMessage>
-  </gui>
-  <proxy active="false"
-          authentication="false">
-    <proxy-host />
-    <proxy-port>0</proxy-port>
-    <proxy-username />
-    <proxy-password />
-  </proxy>
-<!--
-  <security>
-    <keystore>
-      <location>C:\Certificates\[machine]\gateway.jks</location>
-      <password>[machine]</password>
-    </keystore>
-    <truststore>
-      <location>C:\Certificates\[machine]\cacerts.jks</location>
-      <password>changeit</password>
-    </truststore>
-  </security>
--->
+    <rules>
+        <forwarding-rule name="localcap"
+                         port="8001"
+                         blockRequest="false"
+                         blockResponse="false"
+                         inboundTLS="false"
+                         outboundTLS="false"
+                         host="localhost"
+                         method="*">
+            <targetport>8080</targetport>
+            <targethost>localhost</targethost>
+            <interceptors>
+                <interceptor id="urlRewriter"
+                             name="Simple URL Rewriter" />
+            </interceptors>
+        </forwarding-rule>
+    </rules>
+    <global>
+        <adjustHostHeader>false</adjustHostHeader>
+    </global>
+    <gui>
+        <autotrackexchange>true</autotrackexchange>
+        <indentMessage>true</indentMessage>
+    </gui>
+    <proxy active="false"
+           authentication="false">
+        <proxy-host />
+        <proxy-port>0</proxy-port>
+        <proxy-username />
+        <proxy-password />
+    </proxy>
+    <!--
+      <security>
+        <keystore>
+          <location>C:\Certificates\[machine]\gateway.jks</location>
+          <password>[machine]</password>
+        </keystore>
+        <truststore>
+          <location>C:\Certificates\[machine]\cacerts.jks</location>
+          <password>changeit</password>
+        </truststore>
+      </security>
+    -->
 </configuration>

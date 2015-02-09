@@ -30,8 +30,10 @@ import org.apache.commons.logging.LogFactory;
 import com.predic8.membrane.core.exchange.Exchange;
 import com.predic8.membrane.core.http.Header;
 import com.predic8.membrane.core.http.Request;
+import com.predic8.membrane.core.http.Response;
 import com.predic8.membrane.core.util.EndOfStreamException;
 import com.predic8.membrane.core.util.HttpUtil;
+import com.predic8.membrane.core.Constants;
 
 public class HttpServerRunnable extends AbstractHttpRunnable {
 
@@ -140,6 +142,28 @@ public class HttpServerRunnable extends AbstractHttpRunnable {
 			invokeRequestHandlers(getInterceptors());
 
 			synchronized (exchange.getRequest()) {
+				final Request request = exchange.getRequest();
+				if (exchange.getRequest().getHeader().is100ContinueExpected()) {
+					 		
+					
+					log.info("in exchange.getRequest().getHeader().is100ContinueExpected");
+					
+					StringBuilder buf = new StringBuilder();
+					buf.append("HTTP/");
+					buf.append("1.1");
+					buf.append(" ");
+					buf.append("100");
+					buf.append(" ");
+					buf.append("Continue");
+					buf.append(Constants.CRLF);
+					buf.append(Constants.CRLF);
+					
+					getSrcOut().write(buf.toString().getBytes());
+					getSrcOut().flush();
+					
+					request.getHeader().removeFields(Header.EXPECT);
+				}
+				
 				if (exchange.getRule().isBlockRequest()) {
 					exchange.setStopped();
 					block(exchange.getRequest());
