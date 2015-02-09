@@ -202,6 +202,7 @@ public class HttpClient {
 		Response res = new Response();
 		res.read(con.in, !exc.getRequest().isHEADRequest());
 
+		log.info("getStatusCode: " + res.getStatusCode());
 		if (res.getStatusCode() == 100) {
 			do100ExpectedHandling(exc, res, con);
 		}

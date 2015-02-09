@@ -147,6 +147,7 @@ public abstract class Message {
 		out.write(Constants.CRLF_BYTES);
 		
 		if (header.is100ContinueExpected()) {
+			log.info("is100ContinueExpected");
 			out.flush();
 			return;
 		}

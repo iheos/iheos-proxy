@@ -229,7 +229,7 @@ public class ToolkitRepositoryExchangeStore extends AbstractExchangeStore {
 	    		
 	    		log.debug("*** " + exc.getTimeReqReceived() + " -- " + exc.getTimeReqSent() + " -- " +  exc.getTimeResReceived() + " -- " + exc.getTimeResSent() );
 	    		
-	    		String initiatingHost =  exc.getSourceHostname(); //exc.getServer();
+	    		String initiatingHost =  exc.getSourceIp(); // exc.getSourceHostname(); //exc.getServer();	    		
 	    		
 	    		String respondingHost = ((ForwardingRule)exc.getRule()).getTargetHost();
 	    		
@@ -338,7 +338,7 @@ public class ToolkitRepositoryExchangeStore extends AbstractExchangeStore {
 		        ioHeader = txRecord.addChild(ioHeader);
 			} else {
 				// Deep scan: ioHeader = repos.getAsset(new SimpleId(ioHeaderId));
-				Thread.sleep(1200); 
+				Thread.sleep(700); 
 				ioHeader = repos.getAssetByRelativePath(new File((String)exc.getProperty(ioHeaderId)));
 			}
 			
@@ -421,7 +421,7 @@ public class ToolkitRepositoryExchangeStore extends AbstractExchangeStore {
 			        	msgBody.setMimeType(bodyContentType);
 			        }
 
-			        msgBody.setProperty("msgType", msgTypeStr);
+			        msgBody.setProperty(JDBCUtil.MSG_TYPE, msgTypeStr);
 			        msgBody.updateContent(msg.getBody().getContent());					
 					msgBody = msgType.addChild(msgBody);
 					

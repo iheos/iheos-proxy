@@ -82,6 +82,7 @@ public class Response extends Message {
 	public void read(InputStream in, boolean createBody) throws IOException, EndOfStreamException {
 		parseStartLine(in);
 		
+		log.info("read: getStatusCode()" + getStatusCode());
 		if (getStatusCode() == 100) {
 			HttpUtil.readLine(in);
 			return;
