@@ -135,7 +135,7 @@
         <bean class="com.predic8.membrane.core.interceptor.ExchangeStoreInterceptor">
           <property name="exchangeStore">
             <bean class="com.predic8.membrane.core.exchangestore.ToolkitRepositoryExchangeStore" init-method="init" >
-          <property name="toolkitInstallationPath" value="C:/Users/skb1/Documents/develop_plus_gui_test/logBrowser/src/main/resources" />
+          <property name="toolkitInstallationPath" value="C:/Users/skb1/Documents/develop_plus_gui_test/log-browser/src/main/resources" />
               <!--     
               <property name="dir" value="C:/e/temp/router/" />
               <property name="saveBodyOnly" value="false" />
