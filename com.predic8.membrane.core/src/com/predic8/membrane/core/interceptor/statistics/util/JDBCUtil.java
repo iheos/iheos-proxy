@@ -59,7 +59,7 @@ public class JDBCUtil {
 	
 	public static final String STATUS_CODE = "statuscode";
 	
-	public static final String MSG_TYPE = "msgtype"; //skb
+	public static final String MSG_TYPE = "msgtype"; //skb 
 	
 	public static final String TIME = "time";
 	
