@@ -73,6 +73,8 @@ public class ToolkitRepositoryExchangeStore extends AbstractExchangeStore {
 	private static final String MESSAGE_FROM = "messageFrom";
 	
 	private static final String MESSAGE_FROM_IP_ADDRESS = "messageFromIpAddress";
+	
+	private static final String MESSAGE_TYPE = "msgType";
 
 	private static final String PROXY_HOST = "proxy";
 	
@@ -180,7 +182,7 @@ public class ToolkitRepositoryExchangeStore extends AbstractExchangeStore {
 			buf.append("\"\",");
 			buf.append(msg.getProperty(JDBCUtil.TIME)); // parentName 
 			buf.append(",\"");    buf.append(msg.getProperty(JDBCUtil.STATUS_CODE));
-	        buf.append("\",\"");  buf.append(msg.getProperty(JDBCUtil.MSG_TYPE));
+	        buf.append("\",\"");  buf.append(msg.getProperty(MESSAGE_TYPE));
 	        
 			buf.append("\",\"" ); buf.append(msg.getProperty(MESSAGE_FROM_IP_ADDRESS)); // Changed from MESSAGE_FROM 
 	        buf.append("\",\"" ); buf.append(msg.getProperty(PROXY_PORT));			
@@ -212,7 +214,7 @@ public class ToolkitRepositoryExchangeStore extends AbstractExchangeStore {
 	    		asset.setProperty(JDBCUtil.TIME, sdf2.format(ExchangesUtil.getDate(exc)));
 	    		
 
-	            asset.setProperty(JDBCUtil.MSG_TYPE, (isReq)?"REQUEST":"RESPONSE");
+	            asset.setProperty(MESSAGE_TYPE, (isReq)?"REQUEST":"RESPONSE");
 //	            asset.setProperty("name", (isReq)?"request":"response");
 
 	            asset.setProperty(JDBCUtil.STATUS_CODE, "" + ((isReq)?200: exc.getResponse().getStatusCode()));
@@ -421,7 +423,7 @@ public class ToolkitRepositoryExchangeStore extends AbstractExchangeStore {
 			        	msgBody.setMimeType(bodyContentType);
 			        }
 
-			        msgBody.setProperty(JDBCUtil.MSG_TYPE, msgTypeStr);
+			        msgBody.setProperty(MESSAGE_TYPE, msgTypeStr);
 			        msgBody.updateContent(msg.getBody().getContent());					
 					msgBody = msgType.addChild(msgBody);
 					
