@@ -135,7 +135,7 @@
         <bean class="com.predic8.membrane.core.interceptor.ExchangeStoreInterceptor">
           <property name="exchangeStore">
             <bean class="com.predic8.membrane.core.exchangestore.ToolkitRepositoryExchangeStore" init-method="init" >
-          <property name="toolkitInstallationPath" value="C:/Users/skb1/Documents/develop_plus_gui_test/log-browser/src/main/resources" />
+          <property name="toolkitInstallationPath" value="C:/Users/skb1/Documents/develop_plus_gui_test/tk-browser/src/main/resources" />
               <!--     
               <property name="dir" value="C:/e/temp/router/" />
               <property name="saveBodyOnly" value="false" />
@@ -336,6 +336,7 @@
     <property name="displayName" value="Simple URL Rewriter" />
     <property name="mapping">
       <map>
+<!--
         <entry>
           <key>
             <value>/blz-service</value>
@@ -348,6 +349,69 @@
           </key>
           <value>/axis2/services/BLZService?wsdl</value>
         </entry>
+-->
+
+
+<!-- 
+begin template
+        <entry>
+          <key>
+            <value>/xdstools3-3.1.0-SNAPSHOT/xdstools3/</value>
+          </key>
+          <value>/xdstools2-2.201.0/xdstools2/</value>
+        </entry>
+end template
+-->
+
+        <entry>
+          <key>
+            <value>/xdstools3-3.1.0-SNAPSHOT/xdstools3/toolkit</value>
+          </key>
+          <value>/xdstools2-2.201.0/xdstools2/toolkit</value>
+        </entry>
+
+        <entry>
+          <key>
+            <value>/xdstools3-3.1.0-SNAPSHOT/xdstools3/pidAllocate</value>
+          </key>
+          <value>/xdstools2-2.201.0/xdstools2/pidAllocate</value>
+        </entry>
+
+        <entry>
+          <key>
+            <value>/xdstools3-3.1.0-SNAPSHOT/xdstools3/upload</value>
+          </key>
+          <value>/xdstools2-2.201.0/xdstools2/upload</value>
+        </entry>
+
+        <entry>
+          <key>
+            <value>/xdstools3-3.1.0-SNAPSHOT/xdstools3/message/(.*)</value>
+          </key>
+          <value>/xdstools2-2.201.0/xdstools2/message/$1</value>
+        </entry>
+		<entry>
+          <key>
+            <value>/xdstools3-3.1.0-SNAPSHOT/message/(.*)</value>
+          </key>
+          <value>/xdstools2-2.201.0/xdstools2/message/$1</value>
+        </entry>
+
+        <entry>
+          <key>
+            <value>/xdstools3-3.1.0-SNAPSHOT/xdstools3/sim/(.*)</value>
+          </key>
+          <value>/xdstools2-2.201.0/xdstools2/sim/$1</value>
+        </entry>
+        <entry>
+          <key>
+            <value>/xdstools3-3.1.0-SNAPSHOT/sim/(.*)</value>
+          </key>
+          <value>/xdstools2-2.201.0/xdstools2/sim/$1</value>
+        </entry>
+
+
+
       </map>
     </property>
   </bean>

@@ -28,13 +28,17 @@ public class ExchangeStoreInterceptor extends AbstractInterceptor {
 	
 	@Override
 	public Outcome handleRequest(Exchange exc) throws Exception {
-		store.add(exc);
+		if  (!exc.getRule().getName().endsWith("rpc")) {
+			store.add(exc);
+		}
 		return Outcome.CONTINUE;
 	}
 
 	@Override
 	public Outcome handleResponse(Exchange exc) throws Exception {
-		store.add(exc);
+		if  (!exc.getRule().getName().endsWith("rpc")) {
+			store.add(exc);
+		}
 		return Outcome.CONTINUE;
 	}
 	
