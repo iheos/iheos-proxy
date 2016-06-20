@@ -2,3 +2,4 @@
 *.iml
 com.predic8.membrane.core/build/
 com.predic8.membrane.core/dist/
+*.class
