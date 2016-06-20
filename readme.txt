@@ -1,7 +1,8 @@
 A. Binary distribution 
 1) Look in com.predic8.membrane.core\dist\router\membrane-router-2.0.4
 
-B. Building from source
+B. Build from source
+1) Change directory to "com.predic8.membrane.core"
 1) Run ant -f build-router.xml or (Run as Ant Build from the Eclipse IDE)
 
 C. Setting up Router/Configuration:

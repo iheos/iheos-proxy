@@ -1,5 +1,32 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <module type="JAVA_MODULE" version="4">
+  <component name="FacetManager">
+    <facet type="Osmorc" name="OSGi">
+      <configuration manifestGenerationMode="Manually" manifestLocation="META-INF/MANIFEST.MF" jarfileLocation="com.predic8.membrane.core.jar" outputPathType="CompilerOutputPath" bndFileLocation="" bundlorFileLocation="" bundleActivator="" bundleSymbolicName="" bundleVersion="1.0.0" ignoreFilePattern="" useProjectDefaultManifestFileLocation="false" alwaysRebuildBundleJAR="false" doNotSynchronizeWithMaven="false">
+        <additionalProperties />
+        <additionalJARContents />
+      </configuration>
+    </facet>
+    <facet type="Spring" name="Spring">
+      <configuration>
+        <fileset id="fileset" name="Spring Application Context" removed="false">
+          <file>file://$MODULE_DIR$/router/conf/monitor-beans.xml</file>
+          <file>file://$MODULE_DIR$/examples/router/acl/acl-beans.xml</file>
+          <file>file://$MODULE_DIR$/examples/router/xslt/xslt-beans.xml</file>
+          <file>file://$MODULE_DIR$/examples/router/rest2soap/rest2soap-beans.xml</file>
+          <file>file://$MODULE_DIR$/examples/router/basic-auth/basic-auth-beans.xml</file>
+          <file>file://$MODULE_DIR$/examples/router/regex-url-rewriter/regex-url-rewriter-beans.xml</file>
+          <file>file://$MODULE_DIR$/examples/router/loadbalancer-basic-1/lb-beans.xml</file>
+          <file>file://$MODULE_DIR$/examples/router/loadbalancer-client-2/monitor-beans.xml</file>
+          <file>file://$MODULE_DIR$/examples/router/loadbalancer-client-2/secured-beans.xml</file>
+          <file>file://$MODULE_DIR$/configuration/sar/monitor-beans.xml</file>
+          <file>file://$MODULE_DIR$/configuration/nist/con2xds/monitor-beans.xml</file>
+          <file>file://$MODULE_DIR$/configuration/nist/toolkit/filestore/monitor-beans.xml</file>
+          <file>file://$MODULE_DIR$/configuration/monitor-beans.xml</file>
+        </fileset>
+      </configuration>
+    </facet>
+  </component>
   <component name="NewModuleRootManager" inherit-compiler-output="true">
     <exclude-output />
     <content url="file://$MODULE_DIR$">
@@ -8,7 +35,7 @@
     <orderEntry type="inheritedJdk" />
     <orderEntry type="sourceFolder" forTests="false" />
     <orderEntry type="library" name="plugins" level="project" />
-    <orderEntry type="library" name="lib" level="project" />
+    <orderEntry type="library" name="lib2" level="project" />
+    <orderEntry type="library" name="lib1" level="project" />
   </component>
 </module>
-
